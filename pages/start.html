@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fazzk</title>
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 60px 80px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 48px;
+            font-weight: 900;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtitle {
+            font-size: 18px;
+            opacity: 0.9;
+            margin-bottom: 40px;
+        }
+
+        .login-btn {
+            background: #00ffa3;
+            color: #000;
+            border: none;
+            padding: 16px 48px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 8px 20px rgba(0, 255, 163, 0.4);
+            font-family: 'Pretendard', sans-serif;
+        }
+
+        .login-btn:hover {
+            background: #00dd88;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0, 255, 163, 0.6);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .help-toggle {
+            margin-top: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .toggle-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-family: 'Pretendard', sans-serif;
+        }
+
+        .toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .help-content {
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            text-align: left;
+            max-height: 0;
+            padding: 0 24px;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+        }
+
+        .help-content.show {
+            max-height: 600px;
+            padding: 24px;
+        }
+
+        .help-content h3 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            color: #00ffa3;
+        }
+
+        .help-content ol {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+
+        .help-content li {
+            margin-bottom: 12px;
+        }
+
+        .help-content code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        .help-content strong {
+            color: #00ffa3;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎮 Fazzk</h1>
+        <p class="subtitle">실시간 팔로워 알림을 받아보세요</p>
+
+        <button class="login-btn" onclick="startLogin()">
+            치지직 로그인
+        </button>
+
+        <div class="help-toggle">
+            <button class="toggle-btn" onclick="toggleHelp()">
+                📖 사용방법 보기
+            </button>
+        </div>
+
+        <div class="help-content" id="helpContent">
+            <h3>📌 사용방법</h3>
+            <ol>
+                <li><strong>로그인:</strong> 위의 "치지직 로그인" 버튼을 클릭하여 네이버 계정으로 로그인하세요.</li>
+                <li><strong>알림 확인:</strong> 로그인 후 자동으로 알림 화면으로 이동합니다. 새로운 팔로워가 생기면 실시간으로 알림이 표시됩니다.</li>
+                <li><strong>OBS 연동:</strong> OBS에서 브라우저 소스를 추가하고 URL을
+                    <code>http://localhost:3000/pages/notifier.html?obs=true</code>로 설정하세요.
+                </li>
+                <li><strong>테스트:</strong> 알림 화면에서 "테스트 알림" 버튼을 클릭하여 알림이 제대로 작동하는지 확인할 수 있습니다.</li>
+                <li><strong>설정:</strong> 알림 화면 우측 상단의 톱니바퀴 아이콘을 클릭하여 TTS 및 알림 설정을 변경할 수 있습니다.</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        let helpVisible = false;
+
+        function toggleHelp() {
+            const helpContent = document.getElementById('helpContent');
+            const toggleBtn = document.querySelector('.toggle-btn');
+
+            helpVisible = !helpVisible;
+
+            if (helpVisible) {
+                helpContent.classList.add('show');
+                toggleBtn.textContent = '📖 사용방법 숨기기';
+            } else {
+                helpContent.classList.remove('show');
+                toggleBtn.textContent = '📖 사용방법 보기';
+            }
+        }
+
+        // 로그인 시작
+        function startLogin() {
+            if (window.electronAPI) {
+                window.electronAPI.startLogin();
+            } else {
+                console.error('electronAPI not found');
+            }
+        }
+    </script>
+</body>
+
+</html>

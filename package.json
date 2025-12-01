@@ -1,0 +1,36 @@
+{
+  "name": "fazzk",
+  "version": "1.0.0",
+  "description": "Fazzk - Chzzk Follower Notification",
+  "main": "main.js",
+  "author": "dodoroi",
+  "license": "ISC",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "build": {
+    "appId": "com.dodoroi.fazzk",
+    "productName": "Fazzk",
+    "asar": false,
+    "win": {
+      "target": "nsis",
+      "icon": "public/fazzk_icon.png"
+    },
+    "files": [
+      "**/*",
+      "!**/*.map",
+      "!**/*.ts"
+    ]
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "axios": "^1.7.7",
+    "electron-store": "^8.1.0",
+    "express": "^4.21.0",
+    "jimp": "^0.22.12"
+  }
+}

@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Fazzk</title>
+
+    <!-- Embedded CSS -->
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+        :root {
+            --glass-bg: rgba(30, 30, 30, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            --primary-color: #00ffa3;
+            --text-color: #ffffff;
+            --font-family: 'Pretendard', sans-serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-family);
+            background: #121212;
+            /* Dark background to match OBS look */
+            text-align: center;
+            color: var(--text-color);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        [x-cloak] {
+            display: none !important;
+        }
+
+        /* Notification Container */
+        .notification-container {
+            padding: 20px;
+            border-radius: 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            pointer-events: none;
+            opacity: 0;
+            transform: scale(0.9);
+            visibility: hidden;
+        }
+
+        /* Animations */
+        .notification-container.show {
+            opacity: 1;
+            transform: scale(1);
+            visibility: visible;
+        }
+
+        .anim-fade.show {
+            opacity: 1;
+        }
+
+        .anim-slide-up.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .anim-slide-up {
+            transform: translateY(50px);
+            opacity: 0;
+        }
+
+        .anim-slide-down.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .anim-slide-down {
+            transform: translateY(-50px);
+            opacity: 0;
+        }
+
+        .anim-bounce.show {
+            animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        @keyframes bounceIn {
+            0% {
+                transform: scale(0.3);
+                opacity: 0;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 1;
+            }
+
+            70% {
+                transform: scale(0.9);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        /* Profile Image */
+        .profile-img {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 4px solid var(--primary-color);
+            box-shadow: 0 0 20px rgba(0, 255, 163, 0.3);
+            margin-bottom: 15px;
+            object-fit: cover;
+        }
+
+        /* Typography */
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin: 10px 0;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .message {
+            font-size: 1.5rem;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        /* Settings Button */
+        .settings-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(5px);
+            color: white;
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            pointer-events: auto;
+        }
+
+        .settings-btn:hover {
+            background: rgba(0, 0, 0, 0.7);
+            transform: rotate(90deg);
+        }
+
+        /* Help Button */
+        .help-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 80px;
+            /* Positioned to the left of settings button */
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(5px);
+            color: white;
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            pointer-events: auto;
+        }
+
+        .help-btn:hover {
+            background: rgba(0, 0, 0, 0.7);
+            transform: scale(1.1);
+        }
+
+        /* Settings Modal */
+        .settings-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(20, 20, 20, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 30px;
+            border-radius: 16px;
+            width: 380px;
+            color: white;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            border: 1px solid var(--glass-border);
+            text-align: left;
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 15px;
+        }
+
+        .settings-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 1.5rem;
+            padding: 0;
+            transition: color 0.2s;
+        }
+
+        .close-btn:hover {
+            color: white;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ddd;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 8px;
+            font-family: inherit;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Fix for select dropdown options having white background by default */
+        select.form-control option {
+            background-color: #1e1e1e;
+            color: white;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--primary-color);
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary-color);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 1rem;
+            transition: transform 0.1s, filter 0.2s;
+        }
+
+        .btn:hover {
+            filter: brightness(1.1);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            margin-top: 5px;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .file-select-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .file-path-display {
+            flex: 1;
+            font-size: 0.8rem;
+            color: #aaa;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 36px;
+        }
+
+        .obs-mode .settings-btn,
+        .obs-mode .help-btn,
+        .obs-mode .test-btn {
+            display: none !important;
+        }
+    </style>
+
+    <!-- Scripts -->
+    <script src="/public/js/alpine.js" defer></script>
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('app', () => ({
+                currentItem: null,
+                queue: [],
+                knownFollowers: new Set(),
+                isProcessing: false,
+                audio: null,
+                showSettings: false,
+                showHelp: false,
+
+                // Settings
+                volume: 0.5,
+                pollingInterval: 5,
+                enableTTS: false,
+                customSoundPath: null,
+                animationType: 'fade', // fade, slide-up, slide-down, bounce
+                textColor: '#ffffff',
+                textSize: 100, // percentage
+
+                async init() {
+                    console.log('[Alpine] App Initialized');
+                    this.audio = document.getElementById('notificationSound');
+
+                    // OBS Mode Check
+                    if (new URLSearchParams(window.location.search).get('obs') === 'true') {
+                        document.body.classList.add('obs-mode');
+                        console.log('[init] OBS-MODE');
+                    }
+
+                    this.loadSettings();
+                    this.applyStyles();
+                    this.startPolling();
+                },
+
+                loadSettings() {
+                    const s = localStorage;
+                    if (s.getItem('volume')) this.volume = parseFloat(s.getItem('volume'));
+                    if (s.getItem('pollingInterval')) this.pollingInterval = parseInt(s.getItem('pollingInterval'));
+                    if (s.getItem('enableTTS')) this.enableTTS = s.getItem('enableTTS') === 'true';
+                    if (s.getItem('customSoundPath')) this.customSoundPath = s.getItem('customSoundPath');
+                    if (s.getItem('animationType')) this.animationType = s.getItem('animationType');
+                    if (s.getItem('textColor')) this.textColor = s.getItem('textColor');
+                    if (s.getItem('textSize')) this.textSize = parseInt(s.getItem('textSize'));
+                },
+
+                saveSettings() {
+                    const s = localStorage;
+                    s.setItem('volume', this.volume);
+                    s.setItem('pollingInterval', this.pollingInterval);
+                    s.setItem('enableTTS', this.enableTTS);
+                    if (this.customSoundPath) s.setItem('customSoundPath', this.customSoundPath);
+                    s.setItem('animationType', this.animationType);
+                    s.setItem('textColor', this.textColor);
+                    s.setItem('textSize', this.textSize);
+
+                    this.applyStyles();
+                    this.showSettings = false;
+                },
+
+                applyStyles() {
+                    const root = document.documentElement;
+                    root.style.setProperty('--text-color', this.textColor);
+                    document.body.style.fontSize = `${this.textSize}%`;
+
+                    if (this.customSoundPath) {
+                        this.audio.src = `file://${this.customSoundPath}`;
+                    } else {
+                        this.audio.src = '/public/sound.mp3';
+                    }
+                },
+
+                async selectSoundFile() {
+                    if (window.electronAPI) {
+                        const path = await window.electronAPI.selectAudioFile();
+                        if (path) {
+                            this.customSoundPath = path;
+                        }
+                    } else {
+                        alert('Electron API not available');
+                    }
+                },
+
+                startPolling() {
+                    console.log('[startPolling] interval:', this.pollingInterval);
+                    this.fetchFollowers(true);
+                    this.scheduleNextPoll();
+                },
+
+                scheduleNextPoll() {
+                    setTimeout(() => {
+                        this.pollLoop();
+                    }, this.pollingInterval * 1000);
+                },
+
+                async pollLoop() {
+                    await this.fetchFollowers(false);
+                    this.scheduleNextPoll();
+                },
+
+                async fetchFollowers(isInitial = false) {
+                    try {
+                        const response = await fetch(`/followers?_t=${Date.now()}`);
+                        if (!response.ok) return;
+
+                        const resData = await response.json();
+                        const followers = resData.content.data;
+
+                        if (isInitial) {
+                            followers.forEach(f => this.knownFollowers.add(f.user.userIdHash));
+                            console.log('[fetch] Initial:', this.knownFollowers.size);
+                            return;
+                        }
+
+                        const newFollowers = followers.filter(f => !this.knownFollowers.has(f.user.userIdHash));
+                        if (newFollowers.length > 0) {
+                            console.log('[fetch] NEW:', newFollowers.length);
+                            newFollowers.forEach(f => {
+                                this.knownFollowers.add(f.user.userIdHash);
+                                this.queue.push(f);
+                            });
+                            this.processQueue();
+                        }
+                    } catch (error) {
+                        console.error('[fetch] ERR:', error);
+                    }
+                },
+
+                processQueue() {
+                    if (this.queue.length > 0 && !this.isProcessing) {
+                        this.isProcessing = true;
+                        this.currentItem = this.queue.shift();
+                        console.log('[SHOW]', this.currentItem.user.nickname);
+
+                        this.playAlarm();
+                        if (this.enableTTS) this.speak(this.currentItem.user.nickname);
+
+                        setTimeout(() => {
+                            this.currentItem = null;
+                            setTimeout(() => {
+                                this.isProcessing = false;
+                                this.processQueue();
+                            }, 500);
+                        }, 5000);
+                    }
+                },
+
+                playAlarm() {
+                    if (this.audio) {
+                        this.audio.volume = this.volume;
+                        this.audio.currentTime = 0;
+                        this.audio.play().catch(e => console.error('[AUDIO] FAIL:', e));
+                    }
+                },
+
+                speak(text) {
+                    if ('speechSynthesis' in window) {
+                        const utterance = new SpeechSynthesisUtterance(`${text}님이 팔로우했습니다.`);
+                        utterance.lang = 'ko-KR';
+                        utterance.volume = this.volume;
+                        window.speechSynthesis.speak(utterance);
+                    }
+                },
+
+                testAlarm() {
+                    fetch('/test-follower', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    }).then(res => res.json())
+                        .then(data => {
+                            console.log('[TEST] OK');
+                            this.fetchFollowers(false);
+                        })
+                        .catch(err => console.error('[TEST] ERR:', err));
+                }
+            }));
+        });
+    </script>
+</head>
+
+<body x-data="app">
+    <!-- Notification Container -->
+    <div class="notification-container" :class="{'show': currentItem, ['anim-' + animationType]: true}">
+        <template x-if="currentItem">
+            <div>
+                <img :src="currentItem.user.profileImageUrl || '/public/default_profile.png'" class="profile-img">
+                <h1 x-text="currentItem.user.nickname"></h1>
+                <div class="message">님이 팔로우했습니다!</div>
+            </div>
+        </template>
+    </div>
+
+    <!-- Settings Button -->
+    <button class="settings-btn" @click="showSettings=true">⚙️</button>
+
+    <!-- Help Button -->
+    <button class="help-btn" @click="showHelp=true">❓</button>
+
+    <!-- Test Button (Visible only in non-OBS mode) -->
+    <button class="test-btn" @click="testAlarm"
+        style="position:fixed; bottom:20px; left:20px; background:var(--primary-color); color:#000; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:bold; z-index:9999; pointer-events:auto">
+        테스트 알림
+    </button>
+
+    <!-- Usage Guide Modal -->
+    <div x-show="showHelp" class="settings-modal" @click.outside="showHelp=false" x-cloak>
+        <div class="settings-header">
+            <h2>사용 방법</h2>
+            <button class="close-btn" @click="showHelp=false">×</button>
+        </div>
+        <div style="text-align: left; line-height: 1.6; color: #ddd;">
+            <p><strong>1. OBS 설정:</strong></p>
+            <p>OBS 소스 목록에서 <code>브라우저</code> 소스를 추가하세요.</p>
+            <p>URL에 아래 주소를 입력하세요:</p>
+            <code
+                style="background:rgba(255,255,255,0.1); padding:4px; border-radius:4px; display:block; margin:5px 0;">http://localhost:3000/follower?obs=true</code>
+            <p style="font-size:0.9rem; color:#aaa;">(포트 번호가 다를 수 있습니다. 프로그램 실행 시 표시되는 주소를 확인하세요.)</p>
+
+            <p><strong>2. 알림 설정:</strong></p>
+            <p>우측 하단 ⚙️ 버튼을 눌러 알림음, 볼륨, 텍스트 색상 등을 설정할 수 있습니다.</p>
+
+            <p><strong>3. 테스트:</strong></p>
+            <p>좌측 하단 '테스트 알림' 버튼을 눌러 미리보기를 할 수 있습니다.</p>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div x-show="showSettings" class="settings-modal" @click.outside="showSettings=false" x-cloak>
+        <div class="settings-header">
+            <h2>설정</h2>
+            <button class="close-btn" @click="showSettings=false">×</button>
+        </div>
+
+        <!-- Volume -->
+        <div class="form-group">
+            <label>알림 볼륨 (<span x-text="Math.round(volume*100)"></span>%)</label>
+            <input type="range" min="0" max="1" step="0.1" x-model="volume">
+        </div>
+
+        <!-- Sound File -->
+        <div class="form-group">
+            <label>알림음 설정</label>
+            <div class="file-select-group">
+                <button class="btn btn-secondary" style="width:auto; margin:0;" @click="selectSoundFile">파일 선택</button>
+                <div class="file-path-display" x-text="customSoundPath ? customSoundPath.split('\\').pop() : '기본 알림음'">
+                </div>
+            </div>
+        </div>
+
+        <!-- Animation -->
+        <div class="form-group">
+            <label>등장 효과</label>
+            <select class="form-control" x-model="animationType">
+                <option value="fade">페이드 (기본)</option>
+                <option value="slide-up">아래에서 위로</option>
+                <option value="slide-down">위에서 아래로</option>
+                <option value="bounce">바운스</option>
+            </select>
+        </div>
+
+        <!-- Text Customization -->
+        <div class="form-group">
+            <label>텍스트 색상</label>
+            <input type="color" class="form-control" style="height:40px; padding:2px;" x-model="textColor">
+        </div>
+
+        <div class="form-group">
+            <label>텍스트 크기 (<span x-text="textSize"></span>%)</label>
+            <input type="range" min="50" max="150" step="10" x-model="textSize">
+        </div>
+
+        <!-- Polling Interval -->
+        <div class="form-group">
+            <label>갱신 주기 (초)</label>
+            <input type="number" class="form-control" min="3" x-model="pollingInterval">
+        </div>
+
+        <!-- TTS -->
+        <div class="form-group">
+            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                <input type="checkbox" x-model="enableTTS" style="width:auto;"> TTS (음성 안내) 사용
+            </label>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button class="btn btn-secondary" @click="testAlarm">알림 테스트</button>
+            <button class="btn" @click="saveSettings">저장</button>
+        </div>
+    </div>
+
+    <audio id="notificationSound" src="/public/sound.mp3" preload="auto"></audio>
+</body>
+
+</html>
