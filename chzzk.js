@@ -15,6 +15,7 @@ async function getProfileId() {
             headers: {
                 Cookie: Object.entries(cookies).map(([name, value]) => `${name}=${value}`).join('; '),
             },
+            timeout: 5000
         });
 
         console.log('[Chzzk] Profile data received:', response.data);
@@ -42,6 +43,7 @@ async function getFollowers(page = 0, size = 10) {
             headers: {
                 Cookie: Object.entries(cookies).map(([name, value]) => `${name}=${value}`).join('; '),
             },
+            timeout: 5000
         });
 
         return response.data;

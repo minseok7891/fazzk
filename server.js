@@ -112,14 +112,26 @@ async function startServer() {
             const now = Date.now();
 
             // Detect new real followers
-            realFollowers.forEach(f => {
-                const hash = f.user.userIdHash;
-                if (!allKnownFollowers.has(hash)) {
-                    allKnownFollowers.add(hash);
-                    recentRealFollowerQueue.push({ follower: f, createdAt: now });
-                    console.log('[Server] New follower detected:', f.user.nickname);
+            // Detect new real followers
+            if (realFollowers.length > 0) {
+                const currentHashes = new Set(realFollowers.map(f => f.user.userIdHash));
+
+                // Remove known followers that are no longer in the current list (unfollowed or pushed off page 1)
+                for (const hash of allKnownFollowers) {
+                    if (!currentHashes.has(hash)) {
+                        allKnownFollowers.delete(hash);
+                    }
                 }
-            });
+
+                realFollowers.forEach(f => {
+                    const hash = f.user.userIdHash;
+                    if (!allKnownFollowers.has(hash)) {
+                        allKnownFollowers.add(hash);
+                        recentRealFollowerQueue.push({ follower: f, createdAt: now });
+                        console.log('[Server] New follower detected:', f.user.nickname);
+                    }
+                });
+            }
 
             // Cleanup queues
             testFollowerQueue = testFollowerQueue.filter(item => now - item.createdAt < 10000);
