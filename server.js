@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const config = require('./config');
 const chzzk = require('./chzzk');
 const auth = require('./auth');
@@ -154,6 +155,37 @@ async function startServer() {
                 code: '401',
                 message: 'Authentication failed or API request error'
             });
+        }
+    });
+
+    // Settings API
+    const settingsPath = path.join(config.paths.userData, 'settings.json');
+
+    app.get('/settings', (req, res) => {
+        try {
+            if (fs.existsSync(settingsPath)) {
+                const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+                res.json(settings);
+            } else {
+                res.json({}); // Return empty object if no settings saved yet
+            }
+        } catch (error) {
+            console.error('[Server] Failed to read settings:', error);
+            res.status(500).json({ error: 'Failed to read settings' });
+        }
+    });
+
+    app.use(express.json()); // Ensure JSON body parsing is enabled for POST
+
+    app.post('/settings', (req, res) => {
+        try {
+            const settings = req.body;
+            fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+            console.log('[Server] Settings saved:', settings);
+            res.json({ success: true });
+        } catch (error) {
+            console.error('[Server] Failed to save settings:', error);
+            res.status(500).json({ error: 'Failed to save settings' });
         }
     });
 

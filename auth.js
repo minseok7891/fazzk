@@ -19,7 +19,7 @@ async function saveSessionData() {
         }
         fs.accessSync(userDataPath, fs.constants.W_OK);
 
-        const currentSession = session.defaultSession;
+        const currentSession = session.fromPartition('persist:chzzk');
         const cookies = await currentSession.cookies.get({});
 
         if (cookies.length === 0) {
@@ -85,7 +85,7 @@ async function loadSessionData() {
             console.log(`[Auth] Filtered out ${sessionData.cookies.length - validCookies.length} invalid domain cookies.`);
         }
 
-        const currentSession = session.defaultSession;
+        const currentSession = session.fromPartition('persist:chzzk');
         let successCount = 0;
 
         for (const cookie of validCookies) {
@@ -120,7 +120,7 @@ function clearSessionData() {
 
 async function getAllCookies() {
     try {
-        return await session.defaultSession.cookies.get({});
+        return await session.fromPartition('persist:chzzk').cookies.get({});
     } catch (error) {
         console.error('[Auth] Failed to get all cookies:', error);
         return [];
@@ -129,7 +129,7 @@ async function getAllCookies() {
 
 async function getCookiesForDomain(domain) {
     try {
-        return await session.defaultSession.cookies.get({ domain });
+        return await session.fromPartition('persist:chzzk').cookies.get({ domain });
     } catch (error) {
         console.error('[Auth] Failed to get cookies for domain:', error);
         return [];

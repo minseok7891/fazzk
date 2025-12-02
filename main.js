@@ -40,7 +40,7 @@ function createWindow() {
     });
 
     // Monitor cookie changes
-    session.defaultSession.cookies.on('changed', async (event, cookie, cause, removed) => {
+    session.fromPartition('persist:chzzk').cookies.on('changed', async (event, cookie, cause, removed) => {
         if (!removed) {
             if (cookie.name === 'NID_AUT' || cookie.name === 'NID_SES') {
                 console.log('[Cookie] Auth cookie changed. Saving session...');
@@ -105,10 +105,11 @@ ipcMain.handle('get-app-config', () => {
 app.whenReady().then(async () => {
     console.log('[App] Ready');
 
-    const defaultSession = session.defaultSession;
-    await defaultSession.cookies.flushStore();
+    // Use the persistent session
+    const appSession = session.fromPartition('persist:chzzk');
+    await appSession.cookies.flushStore();
 
-    defaultSession.setPreloads([config.paths.preload]);
+
 
     // Create the browser window
     mainWindow = new BrowserWindow({
@@ -120,7 +121,8 @@ app.whenReady().then(async () => {
             enableRemoteModule: false,
             sandbox: true,
             preload: config.paths.preload,
-            webSecurity: true
+            webSecurity: true,
+            partition: 'persist:chzzk' // Ensure persistent session storage
         },
         icon: config.paths.icon
     });
