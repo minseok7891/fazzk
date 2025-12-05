@@ -1,17 +1,19 @@
 {
     "manifest_version": 3,
     "name": "Fazzk Login Helper",
-    "version": "1.0",
+    "version": "1.1",
     "description": "Automatically syncs Naver cookies to Fazzk app",
     "permissions": [
         "cookies",
         "activeTab",
-        "scripting"
+        "scripting",
+        "storage"
     ],
     "host_permissions": [
         "https://*.naver.com/*",
         "https://*.chzzk.naver.com/*",
-        "http://localhost:3000/*"
+        "http://localhost/*",
+        "http://127.0.0.1/*"
     ],
     "background": {
         "service_worker": "background.js"

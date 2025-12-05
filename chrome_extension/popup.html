@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <style>
         body {
-            width: 250px;
+            width: 280px;
             padding: 15px;
             background: #1e1e1e;
             color: white;
@@ -24,6 +24,15 @@
             background: rgba(255, 255, 255, 0.1);
             border-radius: 8px;
             font-size: 0.9rem;
+        }
+
+        .port-info {
+            margin: 10px 0;
+            padding: 8px;
+            background: rgba(0, 255, 163, 0.1);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: #00ffa3;
         }
 
         button {
@@ -45,16 +54,25 @@
             background: #444;
             color: #ddd;
         }
+
+        .small-btn {
+            padding: 6px;
+            font-size: 0.8rem;
+        }
     </style>
 </head>
 
 <body>
     <h2>Fazzk Helper</h2>
+    <div class="port-info" id="portInfo">
+        포트 확인 중...
+    </div>
     <div class="status" id="status">
         자동 동기화 대기 중...
     </div>
     <button id="sendBtn">지금 앱으로 전송</button>
     <button id="copyBtn" class="secondary">클립보드에 복사</button>
+    <button id="refreshBtn" class="secondary small-btn">🔄 포트 재탐색</button>
     <script src="popup.js"></script>
 </body>
 

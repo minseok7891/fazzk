@@ -1,9 +1,13 @@
+const PORT_RANGE = { start: 3000, end: 3010 };
+
 document.addEventListener('DOMContentLoaded', () => {
     const statusDiv = document.getElementById('status');
+    const portInfo = document.getElementById('portInfo');
     const sendBtn = document.getElementById('sendBtn');
     const copyBtn = document.getElementById('copyBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
 
-    // Check connection immediately
+    // 초기 연결 확인
     checkConnection();
 
     sendBtn.addEventListener('click', async () => {
@@ -22,11 +26,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const json = JSON.stringify(cookies, null, 2);
             navigator.clipboard.writeText(json).then(() => {
                 statusDiv.textContent = '복사되었습니다!';
-                setTimeout(() => checkConnection, 2000);
+                setTimeout(() => checkConnection(), 2000);
             });
         } else {
             statusDiv.textContent = '네이버 로그인 필요';
         }
+    });
+
+    refreshBtn.addEventListener('click', async () => {
+        portInfo.textContent = '포트 탐색 중...';
+        portInfo.style.color = '#aaa';
+        await chrome.storage.local.remove('activePort');
+        checkConnection();
     });
 
     async function getCookies() {
@@ -39,10 +50,52 @@ document.addEventListener('DOMContentLoaded', () => {
         return null;
     }
 
+    async function findActivePort() {
+        for (let port = PORT_RANGE.start; port <= PORT_RANGE.end; port++) {
+            try {
+                const response = await fetch(`http://localhost:${port}/settings`, {
+                    method: 'GET',
+                    signal: AbortSignal.timeout(500)
+                });
+                if (response.ok) {
+                    await chrome.storage.local.set({ activePort: port });
+                    return port;
+                }
+            } catch (e) {
+                // 이 포트 사용 불가
+            }
+        }
+        return null;
+    }
+
+    async function getActivePort() {
+        const stored = await chrome.storage.local.get('activePort');
+        if (stored.activePort) {
+            try {
+                const response = await fetch(`http://localhost:${stored.activePort}/settings`, {
+                    signal: AbortSignal.timeout(500)
+                });
+                if (response.ok) {
+                    return stored.activePort;
+                }
+            } catch (e) {
+                // 저장된 포트 무효
+            }
+        }
+        return await findActivePort();
+    }
+
     async function sendToApp(nidAut, nidSes) {
+        const port = await getActivePort();
+        if (!port) {
+            statusDiv.textContent = '앱을 실행해 주세요.';
+            statusDiv.style.color = '#ff5555';
+            return;
+        }
+
         try {
             statusDiv.textContent = '전송 중...';
-            const response = await fetch('http://localhost:3000/auth/cookies', {
+            const response = await fetch(`http://localhost:${port}/auth/cookies`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ NID_AUT: nidAut, NID_SES: nidSes })
@@ -52,22 +105,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 statusDiv.textContent = '전송 성공! 앱을 확인하세요.';
                 statusDiv.style.color = '#00ffa3';
             } else {
-                statusDiv.textContent = '앱 연결 실패 (서버 응답 없음)';
+                statusDiv.textContent = '앱 연결 실패';
                 statusDiv.style.color = '#ff5555';
             }
         } catch (error) {
             statusDiv.textContent = '앱이 실행 중인지 확인하세요.';
             statusDiv.style.color = '#ff5555';
-            console.error(error);
         }
     }
 
     async function checkConnection() {
-        try {
-            await fetch('http://localhost:3000/settings'); // Just check if server is up
+        const port = await getActivePort();
+        if (port) {
+            portInfo.textContent = `포트: ${port}`;
+            portInfo.style.color = '#00ffa3';
             statusDiv.textContent = '앱 연결됨 (자동 동기화 중)';
             statusDiv.style.color = '#00ffa3';
-        } catch (e) {
+        } else {
+            portInfo.textContent = '앱 미연결';
+            portInfo.style.color = '#ff5555';
             statusDiv.textContent = '앱을 실행해 주세요.';
             statusDiv.style.color = '#aaa';
         }

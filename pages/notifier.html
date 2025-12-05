@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 
 <head>
@@ -335,12 +335,129 @@
 
         .obs-mode .settings-btn,
         .obs-mode .help-btn,
-        .obs-mode .test-btn {
+        .obs-mode .test-btn,
+        .obs-mode .history-btn {
             display: none !important;
         }
 
         body.obs-mode {
             background: transparent !important;
+        }
+
+        /* 세션 오류 배너 */
+        .session-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            font-weight: bold;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.9rem;
+        }
+
+        .session-banner.error {
+            background: linear-gradient(90deg, #ff5555, #ff7777);
+        }
+
+        .session-banner.success {
+            background: linear-gradient(90deg, #00c853, #00e676);
+        }
+
+        .session-banner button {
+            background: white;
+            color: #ff5555;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* 히스토리 버튼 */
+        .history-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 140px;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(5px);
+            color: white;
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            pointer-events: auto;
+        }
+
+        .history-btn:hover {
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        /* 히스토리 목록 */
+        .history-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .history-item img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .history-item .info {
+            flex: 1;
+        }
+
+        .history-item .nickname {
+            font-weight: bold;
+            color: #00ffa3;
+        }
+
+        .history-item .time {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .copy-btn {
+            background: var(--primary-color);
+            color: #000;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85rem;
+            margin-left: 8px;
+        }
+
+        .copy-btn:hover {
+            opacity: 0.9;
         }
     </style>
 
@@ -356,15 +473,19 @@
                 audio: null,
                 showSettings: false,
                 showHelp: false,
+                showHistory: false,
+                sessionError: false,
+                history: [],
 
                 // Settings
                 volume: 0.5,
                 pollingInterval: 5,
+                displayDuration: 5,
                 enableTTS: false,
                 customSoundPath: null,
-                animationType: 'fade', // fade, slide-up, slide-down, bounce
+                animationType: 'fade',
                 textColor: '#ffffff',
-                textSize: 100, // percentage
+                textSize: 100,
 
                 async init() {
                     console.log('[Alpine] App Initialized');
@@ -388,6 +509,7 @@
 
                         if (settings.volume !== undefined) this.volume = parseFloat(settings.volume);
                         if (settings.pollingInterval !== undefined) this.pollingInterval = parseInt(settings.pollingInterval);
+                        if (settings.displayDuration !== undefined) this.displayDuration = parseInt(settings.displayDuration);
                         if (settings.enableTTS !== undefined) this.enableTTS = settings.enableTTS;
                         if (settings.customSoundPath !== undefined) this.customSoundPath = settings.customSoundPath;
                         if (settings.animationType !== undefined) this.animationType = settings.animationType;
@@ -404,6 +526,7 @@
                     const settings = {
                         volume: this.volume,
                         pollingInterval: this.pollingInterval,
+                        displayDuration: this.displayDuration,
                         enableTTS: this.enableTTS,
                         customSoundPath: this.customSoundPath,
                         animationType: this.animationType,
@@ -472,12 +595,17 @@
                 async fetchFollowers(isInitial = false) {
                     try {
                         const response = await fetch(`/followers?_t=${Date.now()}`);
-                        if (!response.ok) return;
+                        if (!response.ok) {
+                            if (response.status === 401) {
+                                this.sessionError = true;
+                            }
+                            return;
+                        }
+                        this.sessionError = false;
 
                         const resData = await response.json();
                         const followers = resData.content.data;
 
-                        // Sync knownFollowers with current list (handle unfollows)
                         const currentHashes = new Set(followers.map(f => f.user.userIdHash));
                         this.knownFollowers.forEach(hash => {
                             if (!currentHashes.has(hash)) {
@@ -487,21 +615,21 @@
 
                         if (isInitial) {
                             followers.forEach(f => this.knownFollowers.add(f.user.userIdHash));
-                            console.log('[fetch] Initial:', this.knownFollowers.size);
                             return;
                         }
 
                         const newFollowers = followers.filter(f => !this.knownFollowers.has(f.user.userIdHash));
                         if (newFollowers.length > 0) {
-                            console.log('[fetch] NEW:', newFollowers.length);
                             newFollowers.forEach(f => {
                                 this.knownFollowers.add(f.user.userIdHash);
                                 this.queue.push(f);
+                                this.history.unshift({ ...f, timestamp: Date.now() });
+                                if (this.history.length > 50) this.history.pop();
                             });
                             this.processQueue();
                         }
                     } catch (error) {
-                        console.error('[fetch] ERR:', error);
+                        // 네트워크 오류
                     }
                 },
 
@@ -520,7 +648,7 @@
                                 this.isProcessing = false;
                                 this.processQueue();
                             }, 500);
-                        }, 5000);
+                        }, this.displayDuration * 1000);
                     }
                 },
 
@@ -547,10 +675,21 @@
                         headers: { 'Content-Type': 'application/json' }
                     }).then(res => res.json())
                         .then(data => {
-                            console.log('[TEST] OK');
                             this.fetchFollowers(false);
                         })
-                        .catch(err => console.error('[TEST] ERR:', err));
+                        .catch(err => { });
+                },
+
+                copyOBSUrl() {
+                    const url = `http://${window.location.host}/follower?obs=true`;
+                    navigator.clipboard.writeText(url).then(() => {
+                        alert('OBS URL이 복사되었습니다!');
+                    });
+                },
+
+                formatTime(timestamp) {
+                    const d = new Date(timestamp);
+                    return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
                 }
             }));
         });
@@ -558,6 +697,13 @@
 </head>
 
 <body x-data="app">
+    <!-- 세션 오류 배너 -->
+    <div class="session-banner" :class="sessionError ? 'error' : 'success'" x-cloak>
+        <span x-show="sessionError">⚠️ 세션이 만료되었습니다. 다시 로그인해 주세요.</span>
+        <span x-show="!sessionError">✅ 연결됨 - 팔로워 알림 대기 중</span>
+        <button x-show="sessionError" @click="window.electronAPI && window.electronAPI.startLogin()">로그인</button>
+    </div>
+
     <!-- Notification Container -->
     <div class="notification-container" :class="{'show': currentItem, ['anim-' + animationType]: true}">
         <template x-if="currentItem">
@@ -575,6 +721,9 @@
     <!-- Help Button -->
     <button class="help-btn" @click="showHelp=true">❓</button>
 
+    <!-- History Button -->
+    <button class="history-btn" @click="showHistory=true">📋</button>
+
     <!-- Test Button (Visible only in non-OBS mode) -->
     <button class="test-btn" @click="testAlarm"
         style="position:fixed; bottom:20px; left:20px; background:var(--primary-color); color:#000; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:bold; z-index:9999; pointer-events:auto">
@@ -591,8 +740,11 @@
             <p><strong>1. OBS 설정:</strong></p>
             <p>OBS 소스 목록에서 <code>브라우저</code> 소스를 추가하세요.</p>
             <p>URL에 아래 주소를 입력하세요:</p>
-            <code x-text="`http://${window.location.host}/follower?obs=true`"
-                style="background:rgba(255,255,255,0.1); padding:4px; border-radius:4px; display:block; margin:5px 0;"></code>
+            <div style="display:flex; align-items:center; margin:5px 0;">
+                <code x-text="`http://${window.location.host}/follower?obs=true`"
+                    style="background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:4px; flex:1;"></code>
+                <button class="copy-btn" @click="copyOBSUrl">복사</button>
+            </div>
             <p style="font-size:0.9rem; color:#aaa;">(현재 실행 중인 포트가 자동으로 표시됩니다. 이 주소를 복사해서 사용하세요.)</p>
 
             <p><strong>2. 알림 설정:</strong></p>
@@ -648,6 +800,12 @@
             <input type="range" min="50" max="150" step="10" x-model="textSize">
         </div>
 
+        <!-- Display Duration -->
+        <div class="form-group">
+            <label>알림 표시 시간 (<span x-text="displayDuration"></span>초)</label>
+            <input type="range" min="3" max="15" step="1" x-model="displayDuration">
+        </div>
+
         <!-- Polling Interval -->
         <div class="form-group">
             <label>갱신 주기 (초)</label>
@@ -662,8 +820,30 @@
         </div>
 
         <div style="display:flex; gap:10px; margin-top:20px;">
-            <button class="btn btn-secondary" @click="testAlarm">알림 테스트</button>
-            <button class="btn" @click="saveSettings">저장</button>
+            <button class="btn btn-secondary" style="flex:1;" @click="testAlarm">알림 테스트</button>
+            <button class="btn" style="flex:1;" @click="saveSettings">저장</button>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div x-show="showHistory" class="settings-modal" @click.outside="showHistory=false" x-cloak style="width:420px;">
+        <div class="settings-header">
+            <h2>팔로워 히스토리</h2>
+            <button class="close-btn" @click="showHistory=false">×</button>
+        </div>
+        <div class="history-list">
+            <template x-if="history.length === 0">
+                <p style="text-align:center; color:#888;">아직 알림 기록이 없습니다.</p>
+            </template>
+            <template x-for="item in history" :key="item.user.userIdHash + item.timestamp">
+                <div class="history-item">
+                    <img :src="item.user.profileImageUrl || '/public/default_profile.png'">
+                    <div class="info">
+                        <div class="nickname" x-text="item.user.nickname"></div>
+                        <div class="time" x-text="formatTime(item.timestamp)"></div>
+                    </div>
+                </div>
+            </template>
         </div>
     </div>
 

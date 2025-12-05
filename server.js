@@ -31,9 +31,13 @@ function findAvailablePort(startPort) {
 async function startServer(onLogin) {
     const app = express();
 
-    // CORS middleware to allow requests from Chrome Extension
+    // CORS middleware - localhost만 허용
     app.use((req, res, next) => {
-        res.header("Access-Control-Allow-Origin", "*");
+        const allowedOrigins = ['http://localhost', 'http://127.0.0.1'];
+        const origin = req.headers.origin;
+        if (origin && allowedOrigins.some(allowed => origin.startsWith(allowed))) {
+            res.header("Access-Control-Allow-Origin", origin);
+        }
         res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
         next();
     });
@@ -121,7 +125,6 @@ async function startServer(onLogin) {
             const now = Date.now();
 
             // Detect new real followers
-            // Detect new real followers
             if (realFollowers.length > 0) {
                 const currentHashes = new Set(realFollowers.map(f => f.user.userIdHash));
 
@@ -196,7 +199,7 @@ async function startServer(onLogin) {
         }
     });
 
-    app.use(express.json()); // Ensure JSON body parsing is enabled for POST
+
 
     app.post('/settings', (req, res) => {
         try {
