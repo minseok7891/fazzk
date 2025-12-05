@@ -150,6 +150,9 @@ if (!gotTheLock) {
             icon: config.paths.icon
         });
 
+        // 메뉴 바 제거
+        mainWindow.removeMenu();
+
         mainWindow.on('close', (event) => {
             if (!app.isQuitting) {
                 event.preventDefault();
