@@ -1,8 +1,13 @@
-// 포트 범위 설정
+// Fazzk Extension Background Script (Chrome/Firefox 호환)
+// browser API 사용 (polyfill에 의해 Chrome에서도 작동)
+
 const PORT_RANGE = { start: 3000, end: 3010 };
 let activePort = null;
 let lastSent = 0;
 let isConnected = false;
+
+// API 호환성: browser 또는 chrome 사용
+const api = typeof browser !== 'undefined' ? browser : chrome;
 
 // 아이콘 상태 업데이트
 async function setIconStatus(status) {
@@ -15,11 +20,10 @@ async function setIconStatus(status) {
     const config = configs[status] || configs.disconnected;
 
     try {
-        await chrome.action.setBadgeText({ text: config.text });
-        await chrome.action.setBadgeBackgroundColor({ color: config.color });
-        await chrome.action.setTitle({ title: config.title });
+        await api.action.setBadgeText({ text: config.text });
+        await api.action.setBadgeBackgroundColor({ color: config.color });
+        await api.action.setTitle({ title: config.title });
         isConnected = (status === 'connected');
-        console.log(`[Icon] Status changed to: ${status}`);
     } catch (e) {
         console.error('[Icon] Error:', e);
     }
@@ -27,8 +31,6 @@ async function setIconStatus(status) {
 
 // 사용 가능한 포트 찾기
 async function findActivePort() {
-    console.log('[Port] Searching for active port...');
-
     for (let port = PORT_RANGE.start; port <= PORT_RANGE.end; port++) {
         try {
             const controller = new AbortController();
@@ -42,9 +44,8 @@ async function findActivePort() {
             clearTimeout(timeoutId);
 
             if (response.ok) {
-                console.log(`[Port] Found active port: ${port}`);
                 activePort = port;
-                await chrome.storage.local.set({ activePort: port });
+                await api.storage.local.set({ activePort: port });
                 await setIconStatus('connected');
                 return port;
             }
@@ -53,16 +54,15 @@ async function findActivePort() {
         }
     }
 
-    console.log('[Port] No active port found');
     activePort = null;
-    await chrome.storage.local.remove('activePort');
+    await api.storage.local.remove('activePort');
     await setIconStatus('disconnected');
     return null;
 }
 
 // 저장된 포트 확인 또는 탐색
 async function getActivePort() {
-    const stored = await chrome.storage.local.get('activePort');
+    const stored = await api.storage.local.get('activePort');
 
     if (stored.activePort) {
         try {
@@ -91,15 +91,14 @@ async function getActivePort() {
 }
 
 // Alarm을 사용한 연결 상태 확인
-chrome.alarms.onAlarm.addListener(async (alarm) => {
+api.alarms.onAlarm.addListener(async (alarm) => {
     if (alarm.name === 'connectionCheck') {
-        console.log('[Alarm] Checking connection...');
         await getActivePort();
     }
 });
 
 // 쿠키 변경 감지
-chrome.cookies.onChanged.addListener((changeInfo) => {
+api.cookies.onChanged.addListener((changeInfo) => {
     const cookie = changeInfo.cookie;
     if (cookie.domain.includes('naver.com') && (cookie.name === 'NID_AUT' || cookie.name === 'NID_SES')) {
         const now = Date.now();
@@ -112,8 +111,8 @@ chrome.cookies.onChanged.addListener((changeInfo) => {
 
 async function checkAndSendCookies() {
     try {
-        const nidAut = await chrome.cookies.get({ url: 'https://nid.naver.com', name: 'NID_AUT' });
-        const nidSes = await chrome.cookies.get({ url: 'https://nid.naver.com', name: 'NID_SES' });
+        const nidAut = await api.cookies.get({ url: 'https://nid.naver.com', name: 'NID_AUT' });
+        const nidSes = await api.cookies.get({ url: 'https://nid.naver.com', name: 'NID_SES' });
 
         if (nidAut && nidSes) {
             sendToApp(nidAut.value, nidSes.value);
@@ -140,16 +139,15 @@ async function sendToApp(nidAut, nidSes) {
         });
 
         if (response.ok) {
-            console.log('[Send] Cookies sent successfully');
             await setIconStatus('connected');
 
             // 성공 표시
-            await chrome.action.setBadgeText({ text: '✓' });
-            await chrome.action.setBadgeBackgroundColor({ color: '#00ffa3' });
+            await api.action.setBadgeText({ text: '✓' });
+            await api.action.setBadgeBackgroundColor({ color: '#00ffa3' });
 
             setTimeout(async () => {
                 if (isConnected) {
-                    await chrome.action.setBadgeText({ text: '' });
+                    await api.action.setBadgeText({ text: '' });
                 }
             }, 3000);
         } else {
@@ -158,7 +156,7 @@ async function sendToApp(nidAut, nidSes) {
     } catch (error) {
         console.error('[Send] Error:', error);
         activePort = null;
-        await chrome.storage.local.remove('activePort');
+        await api.storage.local.remove('activePort');
         await setIconStatus('disconnected');
     }
 }
@@ -174,12 +172,12 @@ async function initialize() {
     await findActivePort();
 
     // 10초마다 연결 확인 알람 설정
-    await chrome.alarms.create('connectionCheck', {
+    await api.alarms.create('connectionCheck', {
         periodInMinutes: 0.167 // 약 10초
     });
 
     console.log('[Init] Extension initialized');
 }
 
-// Service Worker 시작
+// 시작
 initialize();

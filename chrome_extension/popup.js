@@ -1,4 +1,9 @@
+// Fazzk Extension Popup Script (Chrome/Firefox 호환)
+
 const PORT_RANGE = { start: 3000, end: 3010 };
+
+// API 호환성: browser 또는 chrome 사용
+const api = typeof browser !== 'undefined' ? browser : chrome;
 
 document.addEventListener('DOMContentLoaded', () => {
     const statusDiv = document.getElementById('status');
@@ -36,13 +41,13 @@ document.addEventListener('DOMContentLoaded', () => {
     refreshBtn.addEventListener('click', async () => {
         portInfo.textContent = '포트 탐색 중...';
         portInfo.style.color = '#aaa';
-        await chrome.storage.local.remove('activePort');
+        await api.storage.local.remove('activePort');
         checkConnection();
     });
 
     async function getCookies() {
-        const nidAut = await chrome.cookies.get({ url: 'https://nid.naver.com', name: 'NID_AUT' });
-        const nidSes = await chrome.cookies.get({ url: 'https://nid.naver.com', name: 'NID_SES' });
+        const nidAut = await api.cookies.get({ url: 'https://nid.naver.com', name: 'NID_AUT' });
+        const nidSes = await api.cookies.get({ url: 'https://nid.naver.com', name: 'NID_SES' });
 
         if (nidAut && nidSes) {
             return { NID_AUT: nidAut.value, NID_SES: nidSes.value };
@@ -58,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     signal: AbortSignal.timeout(500)
                 });
                 if (response.ok) {
-                    await chrome.storage.local.set({ activePort: port });
+                    await api.storage.local.set({ activePort: port });
                     return port;
                 }
             } catch (e) {
@@ -69,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function getActivePort() {
-        const stored = await chrome.storage.local.get('activePort');
+        const stored = await api.storage.local.get('activePort');
         if (stored.activePort) {
             try {
                 const response = await fetch(`http://localhost:${stored.activePort}/settings`, {
