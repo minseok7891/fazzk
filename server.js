@@ -3,6 +3,7 @@ const path = require('path');
 const config = require('./config');
 const chzzk = require('./chzzk');
 const auth = require('./auth');
+const logger = require('./logger');
 
 let testFollowerQueue = [];
 let recentRealFollowerQueue = [];
@@ -49,10 +50,10 @@ async function startServer(onLogin) {
     config.runtimePort = port; // Save actual port to config
 
     // Serve public directory at /public to match frontend paths
-    console.log('[Server] Public path:', config.paths.public);
+    logger.info('[Server] Public 경로:', config.paths.public);
     const fs = require('fs');
-    console.log('[Server] Public exists:', fs.existsSync(config.paths.public));
-    console.log('[Server] CSS exists:', fs.existsSync(require('path').join(config.paths.public, 'css', 'notifier.css')));
+    logger.info('[Server] Public 존재:', fs.existsSync(config.paths.public));
+    logger.info('[Server] CSS 존재:', fs.existsSync(require('path').join(config.paths.public, 'css', 'notifier.css')));
 
     app.use('/public', express.static(config.paths.public));
     app.use(express.static(config.paths.public)); // Keep root access for backward compatibility
@@ -60,12 +61,12 @@ async function startServer(onLogin) {
     // Fallback: Explicitly serve notifier.css if static middleware fails
     app.get('/public/css/notifier.css', (req, res) => {
         const cssPath = require('path').join(config.paths.public, 'css', 'notifier.css');
-        console.log('[Server] Manual serve:', cssPath);
+        logger.info('[Server] 수동 제공:', cssPath);
         if (fs.existsSync(cssPath)) {
             res.setHeader('Content-Type', 'text/css');
             res.send(fs.readFileSync(cssPath, 'utf8'));
         } else {
-            console.error('[Server] CSS file not found:', cssPath);
+            logger.error('[Server] CSS 파일 없음:', cssPath);
             res.status(404).send('CSS not found');
         }
     });
@@ -105,7 +106,7 @@ async function startServer(onLogin) {
         };
 
         testFollowerQueue.push(testFollower);
-        console.log('[Server] Test follower added:', testFollower.user.nickname);
+        logger.info('[Server] 테스트 팔로워 추가됨:', testFollower.user.nickname);
 
         res.json({ success: true, message: 'Test follower added to queue' });
     });
@@ -119,7 +120,7 @@ async function startServer(onLogin) {
                     realFollowers = followerData.content.data;
                 }
             } catch (apiError) {
-                console.warn('[Server] Failed to fetch real followers (ignoring for test queue):', apiError.message);
+                logger.warn('[Server] 실제 팔로워 가져오기 실패 (테스트 큐 위해 무시):', apiError.message);
             }
 
             const now = Date.now();
@@ -140,7 +141,7 @@ async function startServer(onLogin) {
                     if (!allKnownFollowers.has(hash)) {
                         allKnownFollowers.add(hash);
                         recentRealFollowerQueue.push({ follower: f, createdAt: now });
-                        console.log('[Server] New follower detected:', f.user.nickname);
+                        logger.info('[Server] 새 팔로워 감지됨:', f.user.nickname);
                     }
                 });
             }
@@ -174,7 +175,7 @@ async function startServer(onLogin) {
             });
 
         } catch (error) {
-            console.error('[Server] Error fetching followers:', error.message);
+            logger.error('[Server] 팔로워 가져오기 오류:', error.message);
             return res.status(401).json({
                 code: '401',
                 message: 'Authentication failed or API request error'
@@ -194,7 +195,7 @@ async function startServer(onLogin) {
                 res.json({}); // Return empty object if no settings saved yet
             }
         } catch (error) {
-            console.error('[Server] Failed to read settings:', error);
+            logger.error('[Server] 설정 읽기 실패:', error);
             res.status(500).json({ error: 'Failed to read settings' });
         }
     });
@@ -205,10 +206,10 @@ async function startServer(onLogin) {
         try {
             const settings = req.body;
             fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
-            console.log('[Server] Settings saved:', settings);
+            logger.info('[Server] 설정 저장됨:', settings);
             res.json({ success: true });
         } catch (error) {
-            console.error('[Server] Failed to save settings:', error);
+            logger.error('[Server] 설정 저장 실패:', error);
             res.status(500).json({ error: 'Failed to save settings' });
         }
     });
@@ -217,20 +218,20 @@ async function startServer(onLogin) {
         try {
             const { NID_AUT, NID_SES } = req.body;
             if (NID_AUT && NID_SES && onLogin) {
-                console.log('[Server] Received cookies from extension');
+                logger.info('[Server] 확장 프로그램에서 쿠키 수신');
                 await onLogin({ NID_AUT, NID_SES });
                 res.json({ success: true });
             } else {
                 res.status(400).json({ error: 'Missing cookies or handler' });
             }
         } catch (error) {
-            console.error('[Server] Failed to process cookies:', error);
+            logger.error('[Server] 쿠키 처리 실패:', error);
             res.status(500).json({ error: 'Internal server error' });
         }
     });
 
     app.listen(port, () => {
-        console.log(`[Server] Express server running at http://localhost:${port}`);
+        logger.info(`[Server] Express 서버 실행 중: http://localhost:${port}`);
     });
 }
 

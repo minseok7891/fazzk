@@ -5,17 +5,18 @@ const auth = require('./auth');
 const chzzk = require('./chzzk');
 const server = require('./server');
 const updater = require('./updater');
+const logger = require('./logger');
 
 let mainWindow;
 let tray = null;
 
 // Start Express Server
 server.startServer(async (cookies) => {
-    console.log('[Main] Received manual login cookies');
+    logger.info('[Main] 수동 로그인 쿠키 수신');
     await auth.setManualCookies(cookies);
 
     if (mainWindow) {
-        console.log('[Main] Reloading to notifier page...');
+        logger.info('[Main] 알림 페이지로 이동 중...');
         mainWindow.loadURL(`http://localhost:${config.runtimePort || config.port}/pages/notifier.html`);
     }
 });
@@ -25,25 +26,25 @@ function createWindow() {
     mainWindow.loadURL(config.api.nidLogin);
 
     mainWindow.webContents.on('did-finish-load', () => {
-        console.log('[Window] Page load finished');
+        logger.info('[Window] 페이지 로드 완료');
     });
 
     mainWindow.webContents.on('did-navigate', async (event, url) => {
-        console.log('[Window] Navigated to:', url);
+        logger.info('[Window] 이동됨:', url);
 
         // Check if we are on Chzzk main page (relaxed check)
         if (url.includes('chzzk.naver.com')) {
-            console.log('[Window] Login success detected! Saving session...');
+            logger.info('[Window] 로그인 성공! 세션 저장 중...');
             await auth.saveSessionData();
 
-            console.log('[Window] Loading notifier page...');
+            logger.info('[Window] 알림 페이지 로드 중...');
             mainWindow.loadURL(`http://localhost:${config.runtimePort || config.port}/pages/notifier.html`);
 
             try {
                 const profileId = await chzzk.getProfileId();
-                console.log('[Window] Profile ID:', profileId);
+                logger.info('[Window] 프로필 ID:', profileId);
             } catch (e) {
-                console.error('[Window] Failed to get profile ID:', e);
+                logger.error('[Window] 프로필 ID 가져오기 실패:', e);
             }
         }
     });
@@ -52,7 +53,7 @@ function createWindow() {
     session.fromPartition('persist:chzzk').cookies.on('changed', async (event, cookie, cause, removed) => {
         if (!removed) {
             if (cookie.name === 'NID_AUT' || cookie.name === 'NID_SES') {
-                console.log('[Cookie] Auth cookie changed. Saving session...');
+                logger.info('[Cookie] 인증 쿠키 변경됨. 세션 저장 중...');
                 await auth.saveSessionData();
             }
         }
@@ -84,7 +85,7 @@ ipcMain.handle('navigate-to-url', async (event, url) => {
 });
 
 ipcMain.handle('start-login', async (event) => {
-    console.log('[IPC] start-login called');
+    logger.info('[IPC] 로그인 시작 호출됨');
     if (mainWindow) {
         createWindow();
         return true;
@@ -127,7 +128,7 @@ if (!gotTheLock) {
 
     // App Lifecycle
     app.whenReady().then(async () => {
-        console.log('[App] Ready');
+        logger.info('[App] 준비 완료');
 
         // Use the persistent session
         const appSession = session.fromPartition('persist:chzzk');
@@ -185,9 +186,9 @@ if (!gotTheLock) {
 
         if (sessionLoaded) {
             try {
-                console.log('[App] Validating session...');
+                logger.info('[App] 세션 검증 중...');
                 const profileId = await chzzk.getProfileId();
-                console.log('[App] Session valid. Profile:', profileId);
+                logger.info('[App] 세션 유효. 프로필:', profileId);
                 mainWindow.loadURL(`http://localhost:${config.runtimePort || config.port}/pages/notifier.html`);
                 loaded = true;
 
@@ -203,13 +204,13 @@ if (!gotTheLock) {
                     mainWindow.webContents.send('session-refresh-failed', errorMsg);
                 });
             } catch (e) {
-                console.error('[App] Session invalid or expired:', e.message);
+                logger.error('[App] 세션 유효하지 않거나 만료됨:', e.message);
                 // Session cleared in chzzk.js if 401/403
             }
         }
 
         if (!loaded) {
-            console.log('[App] No valid session, loading start page.');
+            logger.info('[App] 유효한 세션 없음, 시작 페이지 로드');
             mainWindow.loadURL(`http://localhost:${config.runtimePort || config.port}/pages/start.html`);
         }
 

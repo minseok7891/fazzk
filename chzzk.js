@@ -1,6 +1,7 @@
 const axios = require('axios');
 const config = require('./config');
 const auth = require('./auth');
+const logger = require('./logger');
 
 let profileId = '';
 
@@ -18,13 +19,13 @@ async function getProfileId() {
             timeout: 5000
         });
 
-        console.log('[Chzzk] Profile data received:', response.data);
+        logger.info('[Chzzk] 프로필 데이터 수신:', response.data);
         profileId = response.data.content.userIdHash;
         return profileId;
     } catch (error) {
-        console.error('[Chzzk] Failed to get profile ID:', error.message);
+        logger.error('[Chzzk] 프로필 ID 가져오기 실패:', error.message);
         if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-            console.error('[Chzzk] Session expired.');
+            logger.error('[Chzzk] 세션 만료됨');
             auth.clearSessionData();
             profileId = '';
         }
@@ -48,9 +49,9 @@ async function getFollowers(page = 0, size = 10) {
 
         return response.data;
     } catch (error) {
-        console.error('[Chzzk] Failed to get followers:', error.message);
+        logger.error('[Chzzk] 팔로워 가져오기 실패:', error.message);
         if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-            console.error('[Chzzk] Session expired.');
+            logger.error('[Chzzk] 세션 만료됨');
             auth.clearSessionData();
             profileId = '';
         }

@@ -5,6 +5,7 @@
 const { ipcMain, shell } = require('electron');
 const https = require('https');
 const { version } = require('./package.json');
+const logger = require('./logger');
 
 const GITHUB_OWNER = 'minseok7891';
 const GITHUB_REPO = 'fazzk';
@@ -98,7 +99,7 @@ async function checkForUpdates() {
 
         return { hasUpdate: false };
     } catch (error) {
-        console.error('[Updater] 업데이트 확인 실패:', error.message);
+        logger.error('[Updater] 업데이트 확인 실패:', error.message);
         return { hasUpdate: false, error: error.message };
     }
 }

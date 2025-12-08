@@ -2,6 +2,7 @@ const { session } = require('electron');
 const Store = require('electron-store');
 const fs = require('fs');
 const config = require('./config');
+const logger = require('./logger');
 
 const store = new Store({
     name: 'session',
@@ -11,7 +12,7 @@ const store = new Store({
 async function saveSessionData() {
     const userDataPath = config.paths.userData;
 
-    console.log('[Auth] Saving session data...');
+    logger.info('[Auth] 세션 데이터 저장 중...');
 
     try {
         if (!fs.existsSync(userDataPath)) {
@@ -23,11 +24,11 @@ async function saveSessionData() {
         const cookies = await currentSession.cookies.get({});
 
         if (cookies.length === 0) {
-            console.warn('[Auth] No cookies to save.');
+            logger.warn('[Auth] 저장할 쿠키 없음');
         } else {
             const naverAuthCookies = cookies.filter(c => c.name === 'NID_AUT' || c.name === 'NID_SES');
             if (naverAuthCookies.length > 0) {
-                console.log(`[Auth] Found ${naverAuthCookies.length} Naver auth cookies.`);
+                logger.info(`[Auth] 네이버 인증 쿠키 ${naverAuthCookies.length}개 발견`);
             }
         }
 
@@ -37,25 +38,25 @@ async function saveSessionData() {
         };
 
         store.set('session', sessionData);
-        console.log('[Auth] Session data saved securely.');
+        logger.info('[Auth] 세션 데이터 안전하게 저장됨');
     } catch (error) {
-        console.error('[Auth] Failed to save session data:', error);
+        logger.error('[Auth] 세션 데이터 저장 실패:', error);
     }
 }
 
 async function loadSessionData() {
-    console.log('[Auth] Loading session data...');
+    logger.info('[Auth] 세션 데이터 로드 중...');
 
     try {
         if (!store.has('session')) {
-            console.log('[Auth] No saved session data found.');
+            logger.info('[Auth] 저장된 세션 데이터 없음');
             return false;
         }
 
         const sessionData = store.get('session');
 
         if (!sessionData.cookies || !Array.isArray(sessionData.cookies)) {
-            console.error('[Auth] Invalid session data format.');
+            logger.error('[Auth] 잘못된 세션 데이터 형식');
             clearSessionData();
             return false;
         }
@@ -66,7 +67,7 @@ async function loadSessionData() {
         });
 
         if (hasExpiredCookies) {
-            console.log('[Auth] Found expired cookies. Clearing session.');
+            logger.info('[Auth] 만료된 쿠키 발견. 세션 정리 중');
             clearSessionData();
             return false;
         }
@@ -82,7 +83,7 @@ async function loadSessionData() {
         });
 
         if (validCookies.length < sessionData.cookies.length) {
-            console.log(`[Auth] Filtered out ${sessionData.cookies.length - validCookies.length} invalid domain cookies.`);
+            logger.info(`[Auth] 잘못된 도메인 쿠키 ${sessionData.cookies.length - validCookies.length}개 필터됨`);
         }
 
         const currentSession = session.fromPartition('persist:chzzk');
@@ -96,14 +97,14 @@ async function loadSessionData() {
                 await currentSession.cookies.set(cookie);
                 successCount++;
             } catch (error) {
-                console.error('[Auth] Failed to set cookie:', error);
+                logger.error('[Auth] 쿠키 설정 실패:', error);
             }
         }
 
-        console.log(`[Auth] Session restored. ${successCount}/${sessionData.cookies.length} cookies loaded.`);
+        logger.info(`[Auth] 세션 복원됨. ${successCount}/${sessionData.cookies.length} 쿠키 로드됨`);
         return successCount > 0;
     } catch (error) {
-        console.error('[Auth] Failed to load session data:', error);
+        logger.error('[Auth] 세션 데이터 로드 실패:', error);
         clearSessionData();
         return false;
     }
@@ -112,9 +113,9 @@ async function loadSessionData() {
 function clearSessionData() {
     try {
         store.delete('session');
-        console.log('[Auth] Session data cleared.');
+        logger.info('[Auth] 세션 데이터 삭제됨');
     } catch (error) {
-        console.error('[Auth] Failed to clear session data:', error);
+        logger.error('[Auth] 세션 데이터 삭제 실패:', error);
     }
 }
 
@@ -122,7 +123,7 @@ async function getAllCookies() {
     try {
         return await session.fromPartition('persist:chzzk').cookies.get({});
     } catch (error) {
-        console.error('[Auth] Failed to get all cookies:', error);
+        logger.error('[Auth] 모든 쿠키 가져오기 실패:', error);
         return [];
     }
 }
@@ -131,7 +132,7 @@ async function getCookiesForDomain(domain) {
     try {
         return await session.fromPartition('persist:chzzk').cookies.get({ domain });
     } catch (error) {
-        console.error('[Auth] Failed to get cookies for domain:', error);
+        logger.error('[Auth] 도메인별 쿠키 가져오기 실패:', error);
         return [];
     }
 }
@@ -156,7 +157,7 @@ async function getAuthCookies() {
 }
 
 async function setManualCookies(cookieData) {
-    console.log('[Auth] Setting manual cookies...');
+    logger.info('[Auth] 수동 쿠키 설정 중...');
     const currentSession = session.fromPartition('persist:chzzk');
     const domain = '.naver.com';
     const now = Date.now() / 1000;
@@ -170,9 +171,9 @@ async function setManualCookies(cookieData) {
     for (const cookie of cookiesToSet) {
         try {
             await currentSession.cookies.set(cookie);
-            console.log(`[Auth] Set cookie: ${cookie.name}`);
+            logger.info(`[Auth] 쿠키 설정됨: ${cookie.name}`);
         } catch (error) {
-            console.error(`[Auth] Failed to set cookie ${cookie.name}:`, error);
+            logger.error(`[Auth] 쿠키 ${cookie.name} 설정 실패:`, error);
         }
     }
 
@@ -226,7 +227,7 @@ function startSessionMonitor(onExpiringSoon) {
 
     // 10분마다 세션 체크 및 저장
     sessionMonitorInterval = setInterval(async () => {
-        console.log('[Auth] 세션 모니터 실행...');
+        logger.info('[Auth] 세션 모니터 실행...');
 
         // 세션 데이터 저장
         await saveSessionData();
@@ -234,12 +235,12 @@ function startSessionMonitor(onExpiringSoon) {
         // 만료 임박 확인
         const expiringSoon = await isSessionExpiringSoon(1);
         if (expiringSoon && sessionExpiryCallback) {
-            console.log('[Auth] 세션 만료 임박!');
+            logger.info('[Auth] 세션 만료 임박!');
             sessionExpiryCallback();
         }
     }, 10 * 60 * 1000); // 10분
 
-    console.log('[Auth] 세션 모니터 시작됨');
+    logger.info('[Auth] 세션 모니터 시작됨');
 }
 
 /**
