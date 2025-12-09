@@ -10,6 +10,46 @@ const logger = require('./logger');
 let mainWindow;
 let tray = null;
 
+/**
+ * 브라우저 윈도우 생성 함수
+ * @returns {BrowserWindow} 생성된 브라우저 윈도우 인스턴스
+ */
+function createBrowserWindow() {
+    const win = new BrowserWindow({
+        width: config.window.width,
+        height: config.window.height,
+        titleBarStyle: 'hidden',
+        titleBarOverlay: {
+            color: '#1a1a1a',
+            symbolColor: '#ffffff',
+            height: 32
+        },
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            enableRemoteModule: false,
+            sandbox: true,
+            preload: config.paths.preload,
+            webSecurity: true,
+            partition: config.session.partition
+        },
+        icon: config.paths.icon
+    });
+
+    // 메뉴 바 제거
+    win.removeMenu();
+
+    // 닫기 버튼 클릭 시 트레이로 최소화
+    win.on('close', (event) => {
+        if (!app.isQuitting) {
+            event.preventDefault();
+            win.hide();
+        }
+    });
+
+    return win;
+}
+
 // Start Express Server
 server.startServer(async (cookies) => {
     logger.info('[Main] 수동 로그인 쿠키 수신');
@@ -163,39 +203,8 @@ if (!gotTheLock) {
         const appSession = session.fromPartition(config.session.partition);
         await appSession.cookies.flushStore();
 
-
-
-        // Create the browser window
-        mainWindow = new BrowserWindow({
-            width: config.window.width,
-            height: config.window.height,
-            titleBarStyle: 'hidden',
-            titleBarOverlay: {
-                color: '#1a1a1a',
-                symbolColor: '#ffffff',
-                height: 32
-            },
-            webPreferences: {
-                nodeIntegration: false,
-                contextIsolation: true,
-                enableRemoteModule: false,
-                sandbox: true,
-                preload: config.paths.preload,
-                webSecurity: true,
-                partition: config.session.partition
-            },
-            icon: config.paths.icon
-        });
-
-        // 메뉴 바 제거
-        mainWindow.removeMenu();
-
-        mainWindow.on('close', (event) => {
-            if (!app.isQuitting) {
-                event.preventDefault();
-                mainWindow.hide();
-            }
-        });
+        // 브라우저 윈도우 생성
+        mainWindow = createBrowserWindow();
 
         // 업데이터 초기화 및 자동 업데이트 확인
         updater.initUpdater(mainWindow);
@@ -251,26 +260,7 @@ if (!gotTheLock) {
 
         app.on('activate', () => {
             if (BrowserWindow.getAllWindows().length === 0) {
-                // Re-create window logic if needed, for now just basic
-                mainWindow = new BrowserWindow({
-                    width: config.window.width,
-                    height: config.window.height,
-                    titleBarStyle: 'hidden',
-                    titleBarOverlay: {
-                        color: '#1a1a1a',
-                        symbolColor: '#ffffff',
-                        height: 32
-                    },
-                    webPreferences: {
-                        nodeIntegration: false,
-                        contextIsolation: true,
-                        enableRemoteModule: false,
-                        sandbox: true,
-                        preload: config.paths.preload,
-                        webSecurity: true
-                    },
-                    icon: config.paths.icon
-                });
+                mainWindow = createBrowserWindow();
                 mainWindow.loadURL(`http://localhost:${config.runtimePort || config.port}/pages/start.html`);
             }
         });

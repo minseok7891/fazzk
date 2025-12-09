@@ -77,8 +77,22 @@ module.exports = {
      * @type {Object}
      */
     auth: {
-        /** @type {string} 세션 암호화 키 */
-        encryptionKey: 'chzzk-follow-alram-secure-session-key-v1',
+        /**
+         * 세션 암호화 키
+         * 우선순위: 환경변수 > 기기별 고유값
+         * @type {string}
+         */
+        get encryptionKey() {
+            // 환경변수에서 우선 확인
+            if (process.env.FAZZK_ENCRYPTION_KEY) {
+                return process.env.FAZZK_ENCRYPTION_KEY;
+            }
+            // 기기별 고유 키 생성 (앱 이름 + 사용자 데이터 경로 조합)
+            const crypto = require('crypto');
+            const salt = 'fazzk-session-v1';
+            const uniqueData = `${app.getPath('userData')}-${salt}`;
+            return crypto.createHash('sha256').update(uniqueData).digest('hex').substring(0, 32);
+        },
         /** @type {string[]} 허용된 쿠키 도메인 */
         allowedDomains: ['.naver.com', '.nid.naver.com', 'nid.naver.com', 'chzzk.naver.com', '.chzzk.naver.com']
     },

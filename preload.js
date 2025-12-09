@@ -1,5 +1,12 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
+/**
+ * 프로덕션 환경 여부
+ * 패키지된 앱은 app.asar 경로를 포함
+ * @type {boolean}
+ */
+const isProduction = process.resourcesPath && process.resourcesPath.includes('app.asar');
+
 // Expose secure APIs to the renderer process
 contextBridge.exposeInMainWorld('electronAPI', {
   // Cookie management APIs
@@ -9,8 +16,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Session management APIs
   clearSessionData: () => ipcRenderer.invoke('clear-session-data'),
 
-  // Development utilities (remove in production)
-  log: (...args) => console.log('[Renderer]', ...args),
+  // 개발 유틸리티 (프로덕션에서는 비활성화)
+  log: isProduction
+    ? () => { } // 프로덕션에서는 빈 함수
+    : (...args) => console.log('[렌더러]', ...args),
 
   // Navigation control
   navigateToUrl: (url) => ipcRenderer.invoke('navigate-to-url', url),
@@ -30,6 +39,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // GitHub API 업데이트
   onUpdateAvailableGithub: (callback) => ipcRenderer.on('update-available-github', (_, data) => callback(data)),
+  onUpdateCheckFailed: (callback) => ipcRenderer.on('update-check-failed', (_, data) => callback(data)),
+  onUpdateCheckComplete: (callback) => ipcRenderer.on('update-check-complete', (_, data) => callback(data)),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   openDownloadPage: (url) => ipcRenderer.invoke('open-download-page', url),
 
@@ -37,5 +48,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setTheme: (isDark) => ipcRenderer.invoke('set-theme', isDark)
 });
 
-// Log successful preload script loading
-console.log('[Preload] Preload script loaded successfully');
+// 프리로드 스크립트 로드 성공 로그 (개발 환경에서만)
+if (!isProduction) {
+  console.log('[Preload] 프리로드 스크립트가 성공적으로 로드되었습니다.');
+}

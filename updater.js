@@ -122,9 +122,26 @@ async function checkForUpdates() {
             };
         }
 
+        // 업데이트 없음 - 최신 버전 사용 중 알림
+        if (mainWindow) {
+            mainWindow.webContents.send('update-check-complete', {
+                hasUpdate: false,
+                currentVersion: currentVersion
+            });
+        }
+
         return { hasUpdate: false };
     } catch (error) {
         logger.error('[Updater] 업데이트 확인 실패:', error.message);
+
+        // 렌더러에 에러 알림 전송
+        if (mainWindow) {
+            mainWindow.webContents.send('update-check-failed', {
+                error: error.message,
+                errorCode: error.code || 'UNKNOWN'
+            });
+        }
+
         return { hasUpdate: false, error: error.message };
     }
 }
