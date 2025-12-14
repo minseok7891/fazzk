@@ -196,7 +196,7 @@ pub async fn download_and_install_update(app: AppHandle, url: String) -> Result<
     
     // 1. Temp 파일 생성
     let temp_dir = std::env::temp_dir();
-    let file_name = url.split('/').last().unwrap_or("fazzk_update.exe");
+    let file_name = url.split('/').next_back().unwrap_or("fazzk_update.exe");
     let file_path = temp_dir.join(file_name);
     
     println!("[Updater] 저장 경로: {:?}", file_path);

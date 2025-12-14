@@ -37,7 +37,7 @@ pub async fn start_server(app_state: Arc<AppState>, app_handle: AppHandle) {
     // 가능한 리소스 경로들을 시도
     let resource_base = app_handle.path().resource_dir().ok();
     
-    let possible_paths = vec![
+    let possible_paths = [
         // 개발 환경
         std::path::PathBuf::from("../pages"),
         // 빌드 환경 - 직접 pages

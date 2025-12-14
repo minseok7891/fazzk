@@ -245,16 +245,13 @@ pub fn run() {
                 })
                 .on_tray_icon_event(|tray, event| {
                     use tauri::tray::{TrayIconEvent, MouseButton, MouseButtonState};
-                    match event {
-                        TrayIconEvent::Click { button, button_state, .. } => {
-                            if button == MouseButton::Left && button_state == MouseButtonState::Up {
-                                if let Some(window) = tray.app_handle().get_webview_window("main") {
-                                    let _ = window.show();
-                                    let _ = window.set_focus();
-                                }
+                    if let TrayIconEvent::Click { button, button_state, .. } = event {
+                        if button == MouseButton::Left && button_state == MouseButtonState::Up {
+                            if let Some(window) = tray.app_handle().get_webview_window("main") {
+                                let _ = window.show();
+                                let _ = window.set_focus();
                             }
                         }
-                        _ => {}
                     }
                 })
                 .build(app)?;
