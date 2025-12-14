@@ -29,6 +29,7 @@ pub struct AppState {
     pub test_queue: Mutex<VecDeque<FollowerItem>>,
     pub real_queue: Mutex<VecDeque<RealFollowerQueueItem>>,
     pub known_followers: Mutex<HashSet<String>>,
+    pub client: reqwest::Client,
 }
 
 impl Default for AppState {
@@ -41,6 +42,7 @@ impl Default for AppState {
             test_queue: Mutex::new(VecDeque::new()),
             real_queue: Mutex::new(VecDeque::new()),
             known_followers: Mutex::new(HashSet::new()),
+            client: reqwest::Client::new(),
         }
     }
 }

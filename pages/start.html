@@ -9,7 +9,10 @@
     <link rel="stylesheet" href="/public/css/common.css">
     <!-- Tauri API 호환 레이어 -->
     <script src="/public/js/tauri-api.js" onerror="console.error('FAILED TO LOAD tauri-api.js')"></script>
-    <script>console.log('start.html loaded, checking tauri-api:', window.electronAPI);</script>
+    <!-- Toast UI -->
+    <link rel="stylesheet" href="/public/css/toast.css">
+    <script src="/public/js/toast.js"></script>
+    <script>console.log('start.html loaded, checking tauri-api:', window.fazzkAPI);</script>
     <style>
         * {
             margin: 0;
@@ -246,17 +249,17 @@
 
     <!-- 커스텀 윈도우 컨트롤 (Tauri 전용) -->
     <div class="window-controls-container">
-        <button class="window-control-btn minimize-btn" onclick="window.electronAPI.minimize()" title="최소화">
+        <button class="window-control-btn minimize-btn" onclick="window.fazzkAPI.minimize()" title="최소화">
             <svg aria-hidden="true" version="1.1" width="10" height="10">
                 <path d="M1 5h9" stroke="currentColor" stroke-width="1" fill="none"></path>
             </svg>
         </button>
-        <button class="window-control-btn maximize-btn" onclick="window.electronAPI.toggleMaximize()" title="최대화/이전 크기">
+        <button class="window-control-btn maximize-btn" onclick="window.fazzkAPI.toggleMaximize()" title="최대화/이전 크기">
             <svg aria-hidden="true" version="1.1" width="10" height="10">
                 <path d="M1,1 H9 V9 H1 V1 Z" stroke="currentColor" stroke-width="1" fill="none"></path>
             </svg>
         </button>
-        <button class="window-control-btn close-btn" onclick="window.electronAPI.close()" title="닫기">
+        <button class="window-control-btn close-btn" onclick="window.fazzkAPI.close()" title="닫기">
             <svg aria-hidden="true" version="1.1" width="10" height="10">
                 <path d="M1,1 L9,9 M9,1 L1,9" stroke="currentColor" stroke-width="1" fill="none"></path>
             </svg>
@@ -1023,8 +1026,8 @@
                 localStorage.setItem('fazzk-theme', 'dark');
             }
             // 타이틀바 색상도 변경
-            if (window.electronAPI?.setTheme) {
-                window.electronAPI.setTheme(isDark);
+            if (window.fazzkAPI?.setTheme) {
+                window.fazzkAPI.setTheme(isDark);
             }
         }
 
@@ -1049,8 +1052,8 @@
                 checkbox.checked = true;
             }
             // 타이틀바 색상도 맞추기
-            if (window.electronAPI?.setTheme) {
-                window.electronAPI.setTheme(isDark);
+            if (window.fazzkAPI?.setTheme) {
+                window.fazzkAPI.setTheme(isDark);
             }
         }
 
@@ -1090,7 +1093,7 @@
 
         // "치지직 로그인" 버튼 클릭 시 - 저장된 쿠키로 로그인 시도
         async function startLogin() {
-            if (window.__TAURI__ && window.electronAPI) {
+            if (window.__TAURI__ && window.fazzkAPI) {
                 try {
                     const { invoke } = window.__TAURI__.core;
                     const result = await invoke('check_auto_login');
@@ -1100,7 +1103,8 @@
                     window.location.href = '/notifier.html';
                 } catch (error) {
                     console.log('[Start] Login failed:', error);
-                    alert('저장된 로그인 정보가 없거나 만료되었습니다.\n\n확장 프로그램을 통해 로그인해 주세요.\n\n1. Chrome 확장 프로그램 설치\n2. 네이버에 로그인\n3. 확장 프로그램이 자동으로 쿠키 전송');
+                    if (window.Toast) window.Toast.error('저장된 로그인 정보가 없거나 만료되었습니다.\n\n확장 프로그램을 통해 로그인해 주세요.', 5000);
+                    else alert('저장된 로그인 정보가 없거나 만료되었습니다.\n\n확장 프로그램을 통해 로그인해 주세요.\n\n1. Chrome 확장 프로그램 설치\n2. 네이버에 로그인\n3. 확장 프로그램이 자동으로 쿠키 전송');
                 }
             }
         }
@@ -1117,7 +1121,8 @@
             const jsonInput = document.getElementById('cookie_json').value.trim();
 
             if (!jsonInput) {
-                alert('쿠키 JSON 값을 입력해주세요.');
+                if (window.Toast) window.Toast.error('쿠키 JSON 값을 입력해주세요.');
+                else alert('쿠키 JSON 값을 입력해주세요.');
                 return;
             }
 
@@ -1125,24 +1130,28 @@
             try {
                 cookies = JSON.parse(jsonInput);
             } catch (e) {
-                alert('올바른 JSON 형식이 아닙니다. 확장프로그램에서 복사한 내용을 그대로 붙여넣어 주세요.');
+                if (window.Toast) window.Toast.error('올바른 JSON 형식이 아닙니다.\n확장프로그램에서 복사한 내용을 붙여넣어 주세요.');
+                else alert('올바른 JSON 형식이 아닙니다. 확장프로그램에서 복사한 내용을 그대로 붙여넣어 주세요.');
                 return;
             }
 
             if (!cookies.NID_AUT || !cookies.NID_SES) {
-                alert('NID_AUT 또는 NID_SES 값이 누락되었습니다.');
+                if (window.Toast) window.Toast.error('NID_AUT 또는 NID_SES 값이 누락되었습니다.');
+                else alert('NID_AUT 또는 NID_SES 값이 누락되었습니다.');
                 return;
             }
 
             try {
-                if (window.electronAPI && window.electronAPI.manualLogin) {
-                    await window.electronAPI.manualLogin(cookies.NID_AUT, cookies.NID_SES);
+                if (window.fazzkAPI && window.fazzkAPI.manualLogin) {
+                    await window.fazzkAPI.manualLogin(cookies.NID_AUT, cookies.NID_SES);
                 } else {
                     // Fallback (should not happen in Tauri)
-                    alert('electronAPI.manualLogin not found');
+                    if (window.Toast) window.Toast.error('API를 찾을 수 없습니다.');
+                    else alert('electronAPI.manualLogin not found');
                 }
             } catch (error) {
-                alert('오류: ' + error.message);
+                if (window.Toast) window.Toast.error('오류: ' + error.message);
+                else alert('오류: ' + error.message);
             }
         }
 
@@ -1151,14 +1160,14 @@
         let updateData = null;
 
         async function checkForUpdates() {
-            if (!window.electronAPI?.checkForUpdates) {
+            if (!window.fazzkAPI?.checkForUpdates) {
                 console.log('[Update] checkForUpdates API not available');
                 return;
             }
 
             try {
                 console.log('[Update] Checking for updates...');
-                const result = await window.electronAPI.checkForUpdates();
+                const result = await window.fazzkAPI.checkForUpdates();
                 console.log('[Update] Result:', result);
 
                 if (result.has_update) {
@@ -1215,7 +1224,7 @@
 
                 // 실제 버전 표시
                 (async () => {
-                    const version = await window.electronAPI.getAppVersion();
+                    const version = await window.fazzkAPI.getAppVersion();
                     document.getElementById('updateVersionText').textContent = `v${version}`;
                 })();
 
@@ -1245,8 +1254,8 @@
             banner.style.display = 'block';
 
             // 진행률 리스너 등록
-            if (window.electronAPI?.onUpdateProgress) {
-                window.electronAPI.onUpdateProgress((payload) => {
+            if (window.fazzkAPI?.onUpdateProgress) {
+                window.fazzkAPI.onUpdateProgress((payload) => {
                     const percent = Math.round(payload.percent);
                     fill.style.width = `${percent}%`;
                     percentText.innerText = `${percent}%`;
@@ -1261,11 +1270,12 @@
 
             try {
                 // 다운로드 시작
-                await window.electronAPI.downloadUpdate(url);
+                await window.fazzkAPI.downloadUpdate(url);
                 // 설치 프로그램 실행 후 앱이 종료되거나 여기서 멈춤
             } catch (e) {
                 console.error('Download failed:', e);
-                alert('다운로드 실패: ' + e);
+                if (window.Toast) window.Toast.error('다운로드 실패: ' + e);
+                else alert('다운로드 실패: ' + e);
                 isDownloading = false;
                 btn.innerText = originalText;
                 btn.disabled = false;
@@ -1278,11 +1288,11 @@
         document.getElementById('updateNowBtn').addEventListener('click', () => {
             if (currentDownloadUrl) {
                 // 앱 내 다운로드 시도
-                if (window.electronAPI?.downloadUpdate) {
+                if (window.fazzkAPI?.downloadUpdate) {
                     startDownload(currentDownloadUrl);
                 } else {
                     // 폴백: 브라우저 열기
-                    window.electronAPI.openDownloadPage(currentDownloadUrl);
+                    window.fazzkAPI.openDownloadPage(currentDownloadUrl);
                     document.getElementById('updateModal').style.display = 'none';
                 }
             }

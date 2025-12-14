@@ -52,7 +52,7 @@ async fn check_auto_login(
         nid_ses: nid_ses_str.clone(),
     };
 
-    match chzzk::get_profile_id(&cookie_data).await {
+    match chzzk::get_profile_id(&state.client, &cookie_data).await {
         Ok((user_id_hash, nickname)) => {
             println!("[Command] Auto-login successful: {} ({})", nickname, user_id_hash);
 
@@ -149,7 +149,7 @@ async fn manual_login(
         nid_ses: nid_ses.clone(),
     };
 
-    match chzzk::get_profile_id(&cookie_data).await {
+    match chzzk::get_profile_id(&state.client, &cookie_data).await {
         Ok((user_id_hash, nickname)) => {
             println!("[Command] Login verified: {} ({})", nickname, user_id_hash);
 

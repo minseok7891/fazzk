@@ -1,0 +1,99 @@
+/* Toast Notification Container */
+.toast-container {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 10001;
+    /* Must be higher than modals */
+    pointer-events: none;
+}
+
+.toast-message {
+    background: rgba(30, 41, 59, 0.95);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: toastSlideUp 0.3s forwards;
+    backdrop-filter: blur(8px);
+    pointer-events: auto;
+    min-width: 300px;
+    max-width: 450px;
+}
+
+.toast-message.success {
+    border-color: rgba(0, 255, 163, 0.5);
+    background: linear-gradient(90deg, rgba(0, 255, 163, 0.1), rgba(30, 41, 59, 0.95) 20%);
+}
+
+.toast-message.error {
+    border-color: rgba(239, 68, 68, 0.5);
+    background: linear-gradient(90deg, rgba(239, 68, 68, 0.1), rgba(30, 41, 59, 0.95) 20%);
+}
+
+.toast-message.info {
+    border-color: rgba(59, 130, 246, 0.5);
+    background: linear-gradient(90deg, rgba(59, 130, 246, 0.1), rgba(30, 41, 59, 0.95) 20%);
+}
+
+.toast-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.toast-content {
+    flex: 1;
+    line-height: 1.4;
+    white-space: pre-line;
+}
+
+.toast-close {
+    cursor: pointer;
+    opacity: 0.5;
+    padding: 4px;
+    transition: opacity 0.2s;
+}
+
+.toast-close:hover {
+    opacity: 1;
+}
+
+@keyframes toastSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes toastFadeOut {
+    to {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.95);
+    }
+}
+
+.toast-message.hiding {
+    animation: toastFadeOut 0.3s forwards;
+}

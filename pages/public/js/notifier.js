@@ -35,28 +35,28 @@ document.addEventListener('alpine:init', () => {
 
             // Tauri API 로드 대기 (최대 1초) - 레이스 컨디션 방지
             // tauri-api.js가 나중에 로드되는 경우를 대비
-            if (!window.electronAPI && window.__TAURI__) {
+            if (!window.fazzkAPI && window.__TAURI__) {
                 console.log('[Notifier] Waiting for Tauri API...');
                 for (let i = 0; i < 20; i++) {
-                    if (window.electronAPI) break;
+                    if (window.fazzkAPI) break;
                     await new Promise(r => setTimeout(r, 50));
                 }
             }
 
             // 앱 모드라면 app-mode 클래스 추가 (윈도우 컨트롤 표시용)
-            if (window.electronAPI) {
+            if (window.fazzkAPI) {
                 document.body.classList.add('app-mode');
             }
 
             // 앱이 아니면(OBS 등) OBS 모드 적용
-            if (!window.electronAPI) {
+            if (!window.fazzkAPI) {
                 document.body.classList.add('obs-mode');
                 console.log('[init] OBS-MODE (Auto-detected)');
             }
 
             // 1. Tauri 환경 (Bridge 통신 사용) - 최우선
-            if (window.electronAPI?.getServerPort) {
-                const port = await window.electronAPI.getServerPort();
+            if (window.fazzkAPI?.getServerPort) {
+                const port = await window.fazzkAPI.getServerPort();
                 this.baseUrl = `http://localhost:${port}`;
                 this.obsUrl = `http://localhost:${port}/follower?obs=true`;
                 console.log('[Notifier] Using Dynamic Port (Tauri):', port);
@@ -163,8 +163,8 @@ document.addEventListener('alpine:init', () => {
             // Update audio source if custom path exists
             // Update audio source if custom path exists
             if (this.customSoundPath) {
-                if (window.electronAPI?.convertFileSrc) {
-                    this.audio.src = window.electronAPI.convertFileSrc(this.customSoundPath);
+                if (window.fazzkAPI?.convertFileSrc) {
+                    this.audio.src = window.fazzkAPI.convertFileSrc(this.customSoundPath);
                 } else {
                     this.audio.src = `file://${this.customSoundPath}`;
                 }
@@ -174,13 +174,14 @@ document.addEventListener('alpine:init', () => {
         },
 
         async selectSoundFile() {
-            if (window.electronAPI) {
-                const path = await window.electronAPI.selectAudioFile();
+            if (window.fazzkAPI) {
+                const path = await window.fazzkAPI.selectAudioFile();
                 if (path) {
                     this.customSoundPath = path;
                 }
             } else {
-                alert('Electron API not available');
+                if (window.Toast) window.Toast.error('API를 사용할 수 없습니다.');
+                else alert('Electron API not available');
             }
         },
 
@@ -354,7 +355,8 @@ document.addEventListener('alpine:init', () => {
             // OBS URL은 항상 백엔드 서버 포트를 사용해야 함
             const url = `${this.baseUrl}/follower?obs=true`;
             navigator.clipboard.writeText(url).then(() => {
-                alert('OBS URL이 복사되었습니다!');
+                if (window.Toast) window.Toast.success('OBS URL이 복사되었습니다!');
+                else alert('OBS URL이 복사되었습니다!');
             });
         },
 
@@ -372,8 +374,8 @@ document.addEventListener('alpine:init', () => {
                 document.documentElement.removeAttribute('data-theme');
                 this.isDarkTheme = true;
             }
-            if (window.electronAPI?.setTheme) {
-                window.electronAPI.setTheme(this.isDarkTheme);
+            if (window.fazzkAPI?.setTheme) {
+                window.fazzkAPI.setTheme(this.isDarkTheme);
             }
         },
 
@@ -386,8 +388,8 @@ document.addEventListener('alpine:init', () => {
                 document.documentElement.setAttribute('data-theme', 'light');
                 localStorage.setItem('fazzk-theme', 'light');
             }
-            if (window.electronAPI?.setTheme) {
-                window.electronAPI.setTheme(this.isDarkTheme);
+            if (window.fazzkAPI?.setTheme) {
+                window.fazzkAPI.setTheme(this.isDarkTheme);
             }
         }
     }));

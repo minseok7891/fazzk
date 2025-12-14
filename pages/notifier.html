@@ -13,6 +13,9 @@
     <link rel="stylesheet" href="/public/css/common.css">
     <!-- Tauri API 호환 레이어 -->
     <script src="/public/js/tauri-api.js"></script>
+    <!-- Toast UI -->
+    <link rel="stylesheet" href="/public/css/toast.css">
+    <script src="/public/js/toast.js"></script>
 
     <!-- Embedded CSS -->
     <style>
@@ -638,17 +641,17 @@
 
     <!-- 커스텀 윈도우 컨트롤 (Tauri 전용) -->
     <div class="window-controls-container" style="right: 135px; top: 0px;">
-        <button class="window-control-btn minimize-btn" onclick="window.electronAPI.minimize()" title="최소화">
+        <button class="window-control-btn minimize-btn" onclick="window.fazzkAPI.minimize()" title="최소화">
             <svg aria-hidden="true" version="1.1" width="10" height="10">
                 <path d="M1 5h9" stroke="currentColor" stroke-width="1" fill="none"></path>
             </svg>
         </button>
-        <button class="window-control-btn maximize-btn" onclick="window.electronAPI.toggleMaximize()" title="최대화/이전 크기">
+        <button class="window-control-btn maximize-btn" onclick="window.fazzkAPI.toggleMaximize()" title="최대화/이전 크기">
             <svg aria-hidden="true" version="1.1" width="10" height="10">
                 <path d="M1,1 H9 V9 H1 V1 Z" stroke="currentColor" stroke-width="1" fill="none"></path>
             </svg>
         </button>
-        <button class="window-control-btn close-btn" onclick="window.electronAPI.close()" title="닫기">
+        <button class="window-control-btn close-btn" onclick="window.fazzkAPI.close()" title="닫기">
             <svg aria-hidden="true" version="1.1" width="10" height="10">
                 <path d="M1,1 L9,9 M9,1 L1,9" stroke="currentColor" stroke-width="1" fill="none"></path>
             </svg>
@@ -662,7 +665,7 @@
         <span x-show="sessionError && !isReconnecting">⚠️ 세션이 만료되었습니다. 다시 로그인해 주세요.</span>
         <span x-show="!sessionError && !isReconnecting">✅ 연결됨 - 팔로워 알림 대기 중</span>
         <button x-show="sessionError && !isReconnecting"
-            @click="window.electronAPI && window.electronAPI.startLogin()">로그인</button>
+            @click="window.fazzkAPI && window.fazzkAPI.startLogin()">로그인</button>
     </div>
 
     <!-- Notification Container -->
@@ -856,7 +859,7 @@
 
     <script>
         // 업데이트 진행률 처리
-        if (window.electronAPI) {
+        if (window.fazzkAPI) {
             // ... (existing code, relying on electronAPI which is polyfilled)
         }
     </script>

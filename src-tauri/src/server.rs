@@ -107,7 +107,7 @@ async fn receive_cookies(
     println!("[Server] Received cookies from extension");
     
     // 1. Verify cookies & Fetch User Info
-    match chzzk::get_profile_id(&payload).await {
+    match chzzk::get_profile_id(&state.app_state.client, &payload).await {
         Ok((hash, nickname)) => {
             println!("[Server] Verified User: {} ({})", nickname, hash);
             
@@ -285,7 +285,7 @@ async fn get_followers(
     // ... (rest of function logic needs app_state usage)
 
     if let (Some(cookies), Some(hash)) = (cookies, user_id_hash) {
-        match chzzk::get_followers(&cookies, &hash).await {
+        match chzzk::get_followers(&app_state.client, &cookies, &hash).await {
             Ok(response) => {
                 if let Some(content) = response.content {
                    real_followers = content.data;

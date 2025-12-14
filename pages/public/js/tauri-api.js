@@ -7,7 +7,7 @@
  */
 
 (function () {
-    if (window.electronAPI) {
+    if (window.fazzkAPI) {
         console.warn('[Tauri API] 이미 초기화되었습니다.');
         return;
     }
@@ -49,8 +49,8 @@
             }
         });
 
-        // window.electronAPI 호환 객체 생성
-        window.electronAPI = {
+        // window.fazzkAPI 객체 생성 (구 electronAPI)
+        window.fazzkAPI = {
             // === 쿠키/세션 관리 (Rust 백엔드 구현 필요) ===
             getCookies: async () => {
                 try {
@@ -117,7 +117,8 @@
                     return await invoke('download_and_install_update', { url });
                 } catch (e) {
                     console.error('[Tauri API] downloadUpdate 실패:', e);
-                    alert('다운로드 실패: ' + e);
+                    if (window.Toast) window.Toast.error('다운로드 실패: ' + e);
+                    else alert('다운로드 실패: ' + e);
                 }
             },
             onUpdateProgress: (callback) => {
@@ -145,7 +146,8 @@
                     return true;
                 } catch (e) {
                     console.error('[Tauri API] manualLogin error:', e);
-                    alert('로그인 실패: ' + e);
+                    if (window.Toast) window.Toast.error('로그인 실패: ' + e);
+                    else alert('로그인 실패: ' + e);
                     return false;
                 }
             },
@@ -222,7 +224,10 @@
             log: (...args) => console.log('[Tauri]', ...args)
         };
 
-        console.log('[Tauri API] 초기화 완료');
+        // Legacy Support
+        window.electronAPI = window.fazzkAPI;
+
+        console.log('[Tauri API] 초기화 완료 (fazzkAPI ready)');
     }
 
     // 페이지 로드 시 자동 초기화

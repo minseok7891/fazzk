@@ -16,7 +16,7 @@ struct UserStatusContent {
     nickname: String,
 }
 
-pub async fn get_profile_id(cookies: &CookieData) -> Result<(String, String), String> {
+pub async fn get_profile_id(client: &reqwest::Client, cookies: &CookieData) -> Result<(String, String), String> {
     let url = "https://comm-api.game.naver.com/nng_main/v1/user/getUserStatus";
     
     let cookie_str = format!("NID_AUT={}; NID_SES={}", cookies.nid_aut, cookies.nid_ses);
@@ -25,7 +25,7 @@ pub async fn get_profile_id(cookies: &CookieData) -> Result<(String, String), St
     headers.insert(COOKIE, HeaderValue::from_str(&cookie_str).map_err(|e| e.to_string())?);
     headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"));
 
-    let client = reqwest::Client::new();
+    // let client = reqwest::Client::new(); // Use passed client
     let res = client.get(url)
         .headers(headers)
         .send()
@@ -79,7 +79,7 @@ pub struct User {
     pub profile_image_url: Option<String>,
 }
 
-pub async fn get_followers(cookies: &CookieData, user_id_hash: &str) -> Result<FollowerResponse, String> {
+pub async fn get_followers(client: &reqwest::Client, cookies: &CookieData, user_id_hash: &str) -> Result<FollowerResponse, String> {
     let url = format!("https://api.chzzk.naver.com/manage/v1/channels/{}/followers?page=0&size=10&userNickname=", user_id_hash);
     
     let cookie_str = format!("NID_AUT={}; NID_SES={}", cookies.nid_aut, cookies.nid_ses);
@@ -88,7 +88,7 @@ pub async fn get_followers(cookies: &CookieData, user_id_hash: &str) -> Result<F
     headers.insert(COOKIE, HeaderValue::from_str(&cookie_str).map_err(|e| e.to_string())?);
     headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"));
 
-    let client = reqwest::Client::new();
+    // let client = reqwest::Client::new();
     let res = client.get(url)
         .headers(headers)
         .send()
