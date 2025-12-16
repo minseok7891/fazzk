@@ -206,7 +206,7 @@ pub async fn download_and_install_update(app: AppHandle, url: String) -> Result<
 
     println!("[Updater] 저장 경로: {:?}", file_path);
 
-    // 2. reqwest로 다운로드
+    // 2. reqwest로 스트리밍 다운로드 (실시간 진행률 표시)
     let client = reqwest::Client::new();
     let res = client
         .get(&url)
@@ -216,22 +216,46 @@ pub async fn download_and_install_update(app: AppHandle, url: String) -> Result<
         .map_err(|e| format!("네트워크 요청 실패: {}", e))?;
 
     let total_size = res.content_length().unwrap_or(0);
-    let bytes = res
-        .bytes()
-        .await
-        .map_err(|e| format!("다운로드 실패: {}", e))?;
 
-    std::fs::write(&file_path, &bytes).map_err(|e| format!("파일 쓰기 실패: {}", e))?;
+    // 파일 생성
+    let mut file =
+        std::fs::File::create(&file_path).map_err(|e| format!("파일 생성 실패: {}", e))?;
 
-    app.emit(
-        "update-progress",
-        ProgressPayload {
-            percent: 100,
-            total: total_size,
-            current: bytes.len() as u64,
-        },
-    )
-    .unwrap_or_default();
+    // 스트리밍 다운로드
+    use futures_util::StreamExt;
+    use std::io::Write;
+
+    let mut stream = res.bytes_stream();
+    let mut downloaded: u64 = 0;
+
+    while let Some(chunk_result) = stream.next().await {
+        let chunk = chunk_result.map_err(|e| format!("청크 다운로드 실패: {}", e))?;
+
+        file.write_all(&chunk)
+            .map_err(|e| format!("파일 쓰기 실패: {}", e))?;
+
+        downloaded += chunk.len() as u64;
+
+        // 진행률 계산 및 전송
+        let percent = if total_size > 0 {
+            (downloaded as f64 / total_size as f64 * 100.0) as u64
+        } else {
+            0
+        };
+
+        app.emit(
+            "update-progress",
+            ProgressPayload {
+                percent,
+                total: total_size,
+                current: downloaded,
+            },
+        )
+        .unwrap_or_default();
+    }
+
+    // 파일 닫기
+    drop(file);
 
     println!("[Updater] 다운로드 완료, 사일런트 설치 시작...");
 
