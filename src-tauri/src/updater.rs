@@ -235,12 +235,34 @@ pub async fn download_and_install_update(app: AppHandle, url: String) -> Result<
 
     println!("[Updater] 다운로드 완료, 사일런트 설치 시작...");
 
-    // 3. 사일런트 설치 실행 (/S 옵션으로 자동 설치)
-    std::process::Command::new(&file_path)
-        .arg("/S") // NSIS 사일런트 설치 옵션
-        .spawn()
-        .map_err(|e| format!("설치 프로그램 실행 실패: {}", e))?;
+    // 3. 설치 후 자동 실행을 위한 배치 스크립트 생성
+    let app_exe_path =
+        std::env::current_exe().map_err(|e| format!("현재 실행 파일 경로 가져오기 실패: {}", e))?;
 
-    // 4. 앱 종료 (설치 진행을 위해)
+    let batch_script = format!(
+        r#"@echo off
+timeout /t 2 /nobreak > nul
+"{}" /S
+timeout /t 3 /nobreak > nul
+start "" "{}"
+del "%~f0"
+"#,
+        file_path.display(),
+        app_exe_path.display()
+    );
+
+    let batch_path = temp_dir.join("fazzk_update.bat");
+    std::fs::write(&batch_path, batch_script)
+        .map_err(|e| format!("배치 스크립트 생성 실패: {}", e))?;
+
+    println!("[Updater] 배치 스크립트 생성: {:?}", batch_path);
+
+    // 4. 배치 스크립트 실행 (숨김 창으로)
+    std::process::Command::new("cmd")
+        .args(["/C", "start", "/min", "", &batch_path.to_string_lossy()])
+        .spawn()
+        .map_err(|e| format!("업데이트 스크립트 실행 실패: {}", e))?;
+
+    // 5. 앱 종료 (설치 진행을 위해)
     std::process::exit(0);
 }
