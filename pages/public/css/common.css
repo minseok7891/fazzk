@@ -275,6 +275,7 @@
     opacity: 1 !important;
     flex-shrink: 0 !important;
     -webkit-appearance: none;
+    appearance: none;
 }
 
 .window-control-btn svg {
