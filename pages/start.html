@@ -611,8 +611,19 @@
                     <p id="updateNotesText">성능 개선 및 버그 수정</p>
                 </div>
 
+                <!-- 다운로드 진행률 (다운로드 중에만 표시) -->
+                <div id="modalProgressContainer" class="modal-progress-container" style="display: none;">
+                    <div class="modal-progress-text">
+                        <span id="modalProgressText">다운로드 중...</span>
+                        <span id="modalProgressPercent">0%</span>
+                    </div>
+                    <div class="modal-progress-bar">
+                        <div id="modalProgressFill" class="modal-progress-fill"></div>
+                    </div>
+                </div>
+
                 <!-- 버튼 -->
-                <div class="update-buttons">
+                <div class="update-buttons" id="updateButtonsContainer">
                     <button class="update-btn-primary" id="updateNowBtn">
                         <span>다운로드</span>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -1012,6 +1023,43 @@
         [data-theme="dark"] .update-modal-glow-right {
             background: radial-gradient(circle, rgba(0, 204, 130, 0.3) 0%, transparent 70%);
         }
+
+        /* 모달 내 진행 표시줄 스타일 */
+        .modal-progress-container {
+            margin-bottom: 16px;
+        }
+
+        .modal-progress-text {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        .modal-progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(100, 116, 139, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .modal-progress-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #00ffa3, #00cc82);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        html:not([data-theme="dark"]) .modal-progress-fill {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        html:not([data-theme="dark"]) .modal-progress-text {
+            color: #64748b;
+        }
     </style>
     <script>
         // 테마 토글 기능
@@ -1245,29 +1293,30 @@
             isDownloading = true;
 
             const btn = document.getElementById('updateNowBtn');
-            const originalText = btn.innerText;
-            const banner = document.getElementById('updateBanner');
-            const fill = document.getElementById('updateProgressFill');
-            const percentText = document.getElementById('updatePercent');
+            const buttonsContainer = document.getElementById('updateButtonsContainer');
+            const progressContainer = document.getElementById('modalProgressContainer');
+            const progressFill = document.getElementById('modalProgressFill');
+            const progressText = document.getElementById('modalProgressText');
+            const progressPercent = document.getElementById('modalProgressPercent');
 
-            btn.innerText = '준비 중...';
-            btn.disabled = true;
-            btn.style.opacity = '0.7';
-
-            // 배너 표시
-            banner.style.display = 'block';
+            // 버튼 숨기고 진행 표시줄 표시
+            buttonsContainer.style.display = 'none';
+            progressContainer.style.display = 'block';
+            progressText.innerText = '다운로드 준비 중...';
+            progressPercent.innerText = '0%';
+            progressFill.style.width = '0%';
 
             // 진행률 리스너 등록
             if (window.fazzkAPI?.onUpdateProgress) {
                 window.fazzkAPI.onUpdateProgress((payload) => {
                     const percent = Math.round(payload.percent);
-                    fill.style.width = `${percent}%`;
-                    percentText.innerText = `${percent}%`;
-                    btn.innerText = `다운로드 중... ${percent}%`;
+                    progressFill.style.width = `${percent}%`;
+                    progressPercent.innerText = `${percent}%`;
 
-                    if (percent >= 100) {
-                        btn.innerText = '설치 실행 중...';
-                        document.getElementById('updateText').innerText = '설치 프로그램 실행 중...';
+                    if (percent < 100) {
+                        progressText.innerText = '다운로드 중...';
+                    } else {
+                        progressText.innerText = '설치 중...';
                     }
                 });
             }
@@ -1275,16 +1324,15 @@
             try {
                 // 다운로드 시작
                 await window.fazzkAPI.downloadUpdate(url);
-                // 설치 프로그램 실행 후 앱이 종료되거나 여기서 멈춤
+                // 설치 프로그램 실행 후 앱이 종료됨
             } catch (e) {
                 console.error('Download failed:', e);
                 if (window.Toast) window.Toast.error('다운로드 실패: ' + e);
                 else alert('다운로드 실패: ' + e);
                 isDownloading = false;
-                btn.innerText = originalText;
-                btn.disabled = false;
-                btn.style.opacity = '1';
-                banner.style.display = 'none';
+                // 에러 시 버튼 다시 표시
+                buttonsContainer.style.display = 'flex';
+                progressContainer.style.display = 'none';
             }
         }
 
@@ -1308,19 +1356,6 @@
         });
     </script>
 
-    <!-- 업데이트 진행률 배너 -->
-    <div id="updateBanner" class="update-banner"
-        style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); width:300px; background:rgba(0,0,0,0.8); padding:10px; border-radius:10px; border:1px solid #00ffa3; z-index:9999;">
-        <div id="updateText" class="update-text" style="color:#fff; margin-bottom:5px; text-align:center;">🚀 업데이트 다운로드
-            중...</div>
-        <div class="update-progress-bar"
-            style="width:100%; height:8px; background:#444; border-radius:4px; overflow:hidden;">
-            <div id="updateProgressFill" class="update-progress-fill"
-                style="width:0; height:100%; background:#00ffa3; transition:width 0.3s;"></div>
-        </div>
-        <div id="updatePercent" class="update-percent"
-            style="color:#aaa; font-size:12px; text-align:right; margin-top:2px;">0%</div>
-    </div>
 </body>
 
 </html>
