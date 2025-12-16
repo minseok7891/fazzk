@@ -257,7 +257,10 @@ pub async fn download_and_install_update(app: AppHandle, url: String) -> Result<
     // 파일 닫기
     drop(file);
 
-    println!("[Updater] 다운로드 완료, 사일런트 설치 시작...");
+    println!("[Updater] 다운로드 완료, 1초 대기 후 사일런트 설치 시작...");
+
+    // 100% 표시 후 1초 대기
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
     // 3. 설치 후 자동 실행을 위한 배치 스크립트 생성
     let app_exe_path =
