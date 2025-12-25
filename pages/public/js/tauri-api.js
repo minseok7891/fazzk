@@ -29,15 +29,24 @@
         const { convertFileSrc } = window.__TAURI__.core; // Tauri 2.0
 
         // Listen for manual login success from Rust backend
+        let isLoginSuccessHandled = false;
         listen('manual-login-success', (event) => {
+            if (isLoginSuccessHandled) return;
+            isLoginSuccessHandled = true;
+
             console.log('[Tauri API] Manual Login Success:', event.payload);
             // Visual feedback
             document.body.style.backgroundColor = '#00ffa3';
-            document.body.innerHTML = '<h1>로그인 성공! 이동 중...</h1>';
+            document.body.innerHTML = '<div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;"><h1>로그인 성공!</h1><p class="message">메인 화면으로 이동합니다...</p></div>';
 
             setTimeout(() => {
                 window.location.href = '/notifier.html';
-            }, 500);
+                // Reset flag after navigation (though page will reload)
+                setTimeout(() => { isLoginSuccessHandled = false; }, 1000);
+            }, 1000);
+
+            // Disable interactions
+            document.body.style.pointerEvents = 'none';
         });
 
         // Update Progress Listener
@@ -139,6 +148,15 @@
             },
 
             // === 로그인 ===
+            startLogin: async () => {
+                try {
+                    await invoke('open_browser_url', { url: 'https://chzzk.naver.com' })
+                        .catch(() => window.open('https://chzzk.naver.com', '_blank'));
+                } catch (e) {
+                    // Fallback if plugin logic is missing, just open external
+                    await open('https://chzzk.naver.com');
+                }
+            },
             manualLogin: async (nid_aut, nid_ses) => {
                 try {
                     // Tauri converts camelCase to snake_case for args

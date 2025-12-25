@@ -119,9 +119,10 @@ pub async fn check_for_updates() -> UpdateCheckResult {
                     .map(|a| a.browser_download_url.clone())
                     .unwrap_or_else(|| release.html_url.clone());
 
-                println!(
+                tracing::info!(
                     "[Updater] 업데이트 발견: {} -> {}",
-                    current_version, latest_version
+                    current_version,
+                    latest_version
                 );
 
                 UpdateCheckResult {
@@ -136,7 +137,7 @@ pub async fn check_for_updates() -> UpdateCheckResult {
                 }
             } else {
                 // 최신 버전 사용 중
-                println!("[Updater] 최신 버전 사용 중: {}", current_version);
+                tracing::info!("[Updater] 최신 버전 사용 중: {}", current_version);
 
                 UpdateCheckResult {
                     has_update: false,
@@ -151,7 +152,7 @@ pub async fn check_for_updates() -> UpdateCheckResult {
             }
         }
         Err(e) => {
-            eprintln!("[Updater] 업데이트 확인 실패: {}", e);
+            tracing::error!("[Updater] 업데이트 확인 실패: {}", e);
 
             UpdateCheckResult {
                 has_update: false,
@@ -197,14 +198,14 @@ struct ProgressPayload {
 /// 앱 내에서 업데이트 직접 다운로드 및 사일런트 설치
 #[tauri::command]
 pub async fn download_and_install_update(app: AppHandle, url: String) -> Result<(), String> {
-    println!("[Updater] 다운로드 시작: {}", url);
+    tracing::info!("[Updater] 다운로드 시작: {}", url);
 
     // 1. Temp 파일 생성
     let temp_dir = std::env::temp_dir();
     let file_name = url.split('/').next_back().unwrap_or("fazzk_update.exe");
     let file_path = temp_dir.join(file_name);
 
-    println!("[Updater] 저장 경로: {:?}", file_path);
+    tracing::info!("[Updater] 저장 경로: {:?}", file_path);
 
     // 2. reqwest로 스트리밍 다운로드 (실시간 진행률 표시)
     let client = reqwest::Client::new();
@@ -257,7 +258,7 @@ pub async fn download_and_install_update(app: AppHandle, url: String) -> Result<
     // 파일 닫기
     drop(file);
 
-    println!("[Updater] 다운로드 완료, 1초 대기 후 사일런트 설치 시작...");
+    tracing::info!("[Updater] 다운로드 완료, 1초 대기 후 사일런트 설치 시작...");
 
     // 100% 표시 후 1초 대기
     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
@@ -283,7 +284,7 @@ exit
     std::fs::write(&batch_path, batch_script)
         .map_err(|e| format!("배치 스크립트 생성 실패: {}", e))?;
 
-    println!("[Updater] 배치 스크립트 생성: {:?}", batch_path);
+    tracing::info!("[Updater] 배치 스크립트 생성: {:?}", batch_path);
 
     // 4. 배치 스크립트 실행 (완전히 숨김 - CREATE_NO_WINDOW)
     #[cfg(target_os = "windows")]

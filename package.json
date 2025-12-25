@@ -1,11 +1,12 @@
 {
   "name": "fazzk-tauri",
   "private": true,
-  "version": "2.3.5",
+  "version": "2.3.6",
   "type": "module",
   "scripts": {
     "tauri": "tauri",
-    "zip-extensions": "node scripts/zip-extension.cjs"
+    "zip-extensions": "node scripts/zip-extension.cjs",
+    "build:all": "npm run zip-extensions && npm run tauri build"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",

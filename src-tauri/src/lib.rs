@@ -8,27 +8,29 @@ use std::sync::Arc;
 use tauri::Manager;
 use tauri_plugin_store::StoreExt;
 
-
 /// 로그인 상태를 업데이트하는 헬퍼 함수
 fn update_login_state(
     state: &AppState,
     cookie_data: state::CookieData,
     user_id_hash: String,
 ) -> Result<(), String> {
-    state.cookies
+    state
+        .cookies
         .lock()
         .map_err(|e| format!("쿠키 잠금 실패: {}", e))?
         .replace(cookie_data);
-    
-    *state.login_status
+
+    *state
+        .login_status
         .lock()
         .map_err(|e| format!("로그인 상태 잠금 실패: {}", e))? = true;
-    
-    state.user_id_hash
+
+    state
+        .user_id_hash
         .lock()
         .map_err(|e| format!("사용자 ID 잠금 실패: {}", e))?
         .replace(user_id_hash);
-    
+
     Ok(())
 }
 
@@ -38,11 +40,11 @@ async fn check_auto_login(
     app: tauri::AppHandle,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> Result<serde_json::Value, String> {
-    println!("[Command] check_auto_login called");
+    tracing::info!("[Command] check_auto_login called");
 
     // 1. Load cookies from Store
     let store = app.store("session.json").map_err(|e| {
-        println!("[Command] Failed to open store: {}", e);
+        tracing::error!("[Command] Failed to open store: {}", e);
         format!("Store 열기 실패: {}", e)
     })?;
 
@@ -51,7 +53,7 @@ async fn check_auto_login(
     let nid_ses_value = store.get("NID_SES");
 
     if nid_aut_value.is_none() || nid_ses_value.is_none() {
-        println!("[Command] No stored cookies found");
+        tracing::warn!("[Command] No stored cookies found");
         return Err("저장된 쿠키 없음".to_string());
     }
 
@@ -80,9 +82,10 @@ async fn check_auto_login(
 
     match chzzk::get_profile_id(&state.client, &cookie_data).await {
         Ok((user_id_hash, nickname)) => {
-            println!(
+            tracing::info!(
                 "[Command] Auto-login successful: {} ({})",
-                nickname, user_id_hash
+                nickname,
+                user_id_hash
             );
 
             // 3. Update Global State
@@ -96,7 +99,7 @@ async fn check_auto_login(
             }))
         }
         Err(e) => {
-            println!("[Command] Auto-login verification failed: {}", e);
+            tracing::error!("[Command] Auto-login verification failed: {}", e);
             // Clear invalid cookies
             let _ = store.delete("NID_AUT");
             let _ = store.delete("NID_SES");
@@ -113,7 +116,7 @@ async fn save_cookies(
     nid_aut: String,
     nid_ses: String,
 ) -> Result<(), String> {
-    println!("[Command] save_cookies called");
+    tracing::info!("[Command] save_cookies called");
 
     let store = app
         .store("session.json")
@@ -126,7 +129,7 @@ async fn save_cookies(
         .save()
         .map_err(|e| format!("Store 저장 실패: {}", e))?;
 
-    println!("[Command] Cookies saved successfully");
+    tracing::info!("[Command] Cookies saved successfully");
     Ok(())
 }
 
@@ -157,7 +160,7 @@ async fn manual_login(
     nid_aut: String,
     nid_ses: String,
 ) -> Result<(), String> {
-    println!("[Command] manual_login called");
+    tracing::info!("[Command] manual_login called");
 
     // 1. Verify cookies with Chzzk API
     let cookie_data = state::CookieData {
@@ -167,7 +170,7 @@ async fn manual_login(
 
     match chzzk::get_profile_id(&state.client, &cookie_data).await {
         Ok((user_id_hash, nickname)) => {
-            println!("[Command] Login verified: {} ({})", nickname, user_id_hash);
+            tracing::info!("[Command] Login verified: {} ({})", nickname, user_id_hash);
 
             // 2. Update Global State
             update_login_state(&state, cookie_data, user_id_hash.clone())?;
@@ -186,7 +189,7 @@ async fn manual_login(
             Ok(())
         }
         Err(e) => {
-            println!("[Command] Login verification failed: {}", e);
+            tracing::error!("[Command] Login verification failed: {}", e);
             Err(format!("로그인 검증 실패: {}", e))
         }
     }
@@ -197,13 +200,14 @@ pub fn run() {
     let app_state = Arc::new(AppState::default());
     let server_state = app_state.clone();
 
+    // Initialize Tracing removed from here (moved to setup)
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            // 중복 실행 시 기존 창 포커스
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.show();
                 let _ = window.set_focus();
@@ -212,13 +216,38 @@ pub fn run() {
         .manage(app_state)
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                // 윈도우 닫기 요청 시(X 버튼 등) 앱을 종료하지 않고 숨김
-                // 트레이 아이콘을 통해서만 완전히 종료 가능
                 let _ = window.hide();
                 api.prevent_close();
             }
         })
         .setup(move |app| {
+            // Setup Tracing with File Appender
+            use tracing_subscriber::prelude::*;
+
+            let log_dir = app
+                .path()
+                .app_log_dir()
+                .unwrap_or_else(|_| app.path().app_data_dir().unwrap().join("logs"));
+
+            let _ = std::fs::create_dir_all(&log_dir);
+            let file_appender = tracing_appender::rolling::daily(&log_dir, "fazzk.log");
+            let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
+
+            // Leak guard to keep logging alive (App lifetime)
+            Box::leak(Box::new(guard));
+
+            tracing_subscriber::registry()
+                .with(tracing_subscriber::fmt::layer())
+                .with(
+                    tracing_subscriber::fmt::layer()
+                        .with_writer(non_blocking)
+                        .with_ansi(false),
+                )
+                .with(tracing_subscriber::EnvFilter::new("info,fazzk_tauri=debug"))
+                .init();
+
+            tracing::info!("Filesystem logging initialized at {:?}", log_dir);
+
             let handle = app.handle().clone();
             let state = server_state.clone();
 

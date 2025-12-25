@@ -1,5 +1,9 @@
 # Fazzk 프로젝트 개발 지침
 
+## 📝 문서화
+- 모든 계획안(`implementation_plan.md`) 및 작업 목록(`task.md`)은 **반드시 한국어**로 작성해야 합니다.
+
+
 ## 🖥️ 환경별 주의사항
 
 ### PowerShell (Windows)

@@ -855,12 +855,12 @@
             <template x-if="history.length === 0">
                 <p style="text-align:center; color:#888;">아직 알림 기록이 없습니다.</p>
             </template>
-            <template x-for="item in history" :key="item.user.userIdHash + item.timestamp">
+            <template x-for="item in history" :key="item._id">
                 <div class="history-item">
                     <img :src="item.user.profileImageUrl || '/public/default_profile.png'">
                     <div class="info">
                         <div class="nickname" x-text="item.user.nickname"></div>
-                        <div class="time" x-text="formatFollowTime(item.followingSince || item.timestamp)"></div>
+                        <div class="time" x-text="formatFollowTime(item.followingSince || item.notifiedAt)"></div>
                     </div>
                 </div>
             </template>

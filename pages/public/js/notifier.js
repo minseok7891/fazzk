@@ -283,10 +283,12 @@ document.addEventListener('alpine:init', () => {
         },
 
         addHistory(item) {
+            console.log('[History] Adding item:', item);
             if (!item) return;
             // Add timestamp and followingSince
             const historyItem = {
                 ...item,
+                _id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
                 notifiedAt: new Date().toISOString(),
                 followingSince: item.followingSince || null
             };
@@ -305,9 +307,19 @@ document.addEventListener('alpine:init', () => {
 
         loadHistory() {
             const saved = localStorage.getItem('alarmHistory');
+            console.log('[History] Loading from storage:', saved ? 'Found' : 'Empty');
             if (saved) {
                 try {
                     this.history = JSON.parse(saved);
+                    // Backfill missing IDs for old data
+                    let modified = false;
+                    this.history.forEach(item => {
+                        if (!item._id) {
+                            item._id = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                            modified = true;
+                        }
+                    });
+                    if (modified) this.saveHistory();
                 } catch (e) {
                     console.error('[History] Load failed:', e);
                     this.history = [];
