@@ -1,11 +1,11 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Fazzk",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "identifier": "com.dodoroi.fazzk",
   "build": {
     "beforeDevCommand": "",
-    "beforeBuildCommand": "",
+    "beforeBuildCommand": "powershell -Command \"Set-Location ../pages-svelte; npm run build\"",
     "beforeDevCommand": "",
     "frontendDist": "../pages-svelte/dist"
   },

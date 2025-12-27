@@ -22,9 +22,9 @@ export const api = {
         catch (e) { console.error('getServerPort failed', e); return 3000; }
     },
     getAppVersion: async () => {
-        if (!isTauri) return '2.5.0'; // 현재 버전으로 업데이트
+        if (!isTauri) return '2.5.1'; // 현재 버전으로 업데이트
         try { return await invoke('get_app_version'); }
-        catch (e) { console.error('getAppVersion failed', e); return '2.5.0'; }
+        catch (e) { console.error('getAppVersion failed', e); return '2.5.1'; }
     },
     manualLogin: async (nidAut, nidSes) => {
         if (!isTauri) throw new Error('Manual login not available in browser mode');

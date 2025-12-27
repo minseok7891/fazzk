@@ -17,7 +17,7 @@
   let currentDownloadUrl = $state("");
   let isDownloading = $state(false);
   let downloadProgress = $state(0);
-  let currentAppVersion = $state("2.5.0"); // 기본값
+  let currentAppVersion = $state("2.5.1"); // 기본값
 
   onMount(async () => {
     // 다크 테마를 기본으로 설정
